@@ -7,6 +7,9 @@ def oleo_conversoes_precalc(do, Tf):
     api = (141.5 / do) - 131.5
     return api, Tr
 
+def ponto_bolha_stand(api, Tf, dg, Rs):
+    a = (7.916e-4)*api**1.541 - (4.561e-5)*Tf**1.3911
+    return (112.727 * (Rs ** 0.577421)) / ((dg ** 0.8439) * (10 ** a)) - 1391.051
 
 def razao_solubilidade_STANDING(dg, api, Tf, Ppsi, Pb):
     if Ppsi > Pb:
@@ -21,7 +24,15 @@ def razao_solubilidade_STANDING(dg, api, Tf, Ppsi, Pb):
 
 
 def compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Pb):
-    if Ppsi >= Pb:  # Usará a correlação de Petrosky e Farshad (1993)
+    
+
+
+
+
+
+
+
+    '''if Ppsi >= Pb:  # Usará a correlação de Petrosky e Farshad (1993)
         Co = (
             (1.705e-7)
             * (Rs**0.69357)
@@ -49,7 +60,7 @@ def compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Pb):
         Co = (-Rs / (Bo * (0.83 * Ppsi + 21.75))) * (
             0.00014 * (dg / do) ** 0.5 * (Rs * (dg / do) ** 0.5 + 1.25 * (Tf)) ** 0.12
             - Bg
-        )
+        )'''
     return Co  # 1/psia
 
 
@@ -84,7 +95,7 @@ def visco_oleoSaturado_BERGMAN(mu_oleoD_Berg, Rs):
     return mu_oleoSatu  # cP
 
 
-# Para comparar as correlações de Co
+'''# Para comparar as correlações de Co
 def RAZAO_PB(dg, api, Tf, Pb):
     RsPB = dg * (((Pb / 18.2) + 1.4) * 10 ** ((0.0125 * api) - (0.00091 * Tf))) ** (
         1 / 0.83
@@ -107,4 +118,4 @@ def Co_PB(rho_Pb, Pb, Ppsi):
         (rho_Pb + (0.004347 * (Ppsi - Pb)) - 79.1)
         / ((0.0007141 * (Ppsi - Pb)) - 12.938)
     )
-    return CoPB
+    return CoPB'''
