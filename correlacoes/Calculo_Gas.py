@@ -64,12 +64,12 @@ def visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr):
     return mu_gas
 
 
-def compressibilidade_gas(P_pc, P_pr, T_pr, Z):
+'''def compressibilidade_gas(P_pc, P_pr, T_pr, Z):
     dZ = (-3.53 / (10 ** (0.9813 * T_pr))) + (
         (2 * 0.274 * P_pr) / (10 ** (0.8157 * T_pr))
     )
     Cg = (1 / (P_pr * P_pc)) - (1 / (Z * P_pc) * dZ)
-    return Cg
+    return Cg'''
 
 
 '''def compressibilidade_gas(Ppsi, Tr, dg, delta_p=5.0):
