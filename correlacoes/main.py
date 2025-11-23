@@ -1,5 +1,6 @@
 import Calculo_Gas as cg
 import Calculo_Oleo as co
+import Calculo_agua as ca
 
 if __name__ == '__main__':
     # Condição Standard
@@ -12,21 +13,23 @@ if __name__ == '__main__':
     
     # PARAMETROS DE ENTRADA
     dg = 0.72
-    do = 0.86
+    api = 23
 
     #Local de observação
     Tc = 80 # °C
     Tf = (Tc * 1.8) + 32 # °F
 
-    Pbar = 100 # bar
+    Pbar = 500 # bar
     Ppsi = Pbar * 14.5037738 # psia'''
+    print(f'Ppsi = {Ppsi} psia')
+    
+    BSW = 0.2
 
+    RGL = 300  # [sm3/sm3] 
+    RGO = RGL * 5.61458/(1 - BSW) # [scf/stb]
+    print(f'RGO = {RGO/ 5.61458} Sm3/Sm3')
 
-    S = 2
-
-    Pb = 5000 # psia
-
-
+    S = 0
 
     #Resultados do Gás
 
@@ -49,7 +52,7 @@ if __name__ == '__main__':
 
     Bg_m3 = cg.fator_formação_gas(Ppsi,Tr,dg,Tsc_r,Psc_psi)
     Bg_bbl = Bg_m3/5.615 # bbl/SCF
-    print(f'Bg = {Bg_m3} m3/Sm3 = cft/SCF')
+    print(f'Bg = {Bg_m3} m3/Sm3 = CF/SCF')
     print(f'Bg = {Bg_bbl} bbl/SCF')
 
     print('_'*30)
@@ -68,44 +71,52 @@ if __name__ == '__main__':
     print('       RESULTADOS DO ÓLEO       ')
     print('='*30)
 
-    api,Tr = co.oleo_conversoes_precalc(do,Tf)
+    Tr, do = co.oleo_conversoes_precalc(Tf, api)
     print(f'°API = {api}')
 
-    '''Pb = co.ponto_bolha_stand(api, Tf, dg, Ppsi, Pb, Rss=0, rgl=1684.38)
-    print (f'Pb = {Pb} psia')'''
+    Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
+    print (f'Pb = {Pb} psia')
 
-    Rs = co.razao_solubilidade_STANDING(dg,api,Tf,Ppsi,Pb)
+    Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
     print(f'Rs = {Rs} SCF/STB')
-    '''RsPB = co.razao_solubilidade_STANDING(dg,api,Tf,Pb,Pb)
-    print(f'RsPB = {RsPB} SCF/STB')'''
 
-    Co = co.compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Pb, Tsc_r, Psc_psi)
+    Co = co.compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb)
     print(f'Co = {Co} 1/psia')
 
-    Bo = co.fator_formação_STANDING(do,dg,Rs,Tf,Ppsi,Pb,Co)
+    Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
     print(f'Bo = {Bo} bbl/STB')
     
-
     print('_'*30)
     print('Principais')
     print('_'*30)
 
-    rho_oleo = co.massa_especifica_oleo(do,Rs,dg,Bo,Ppsi,Pb,Co)
-    print(f'rho_oleo = {rho_oleo} lb/ft^3')
+    rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
+    print(f'rho_oleo = {rho_o} lb/ft^3')
     
-    mu_oleoDeth = co.visco_oleoD_BEAL_STAN(api,Tr)
-    print(f'mu_oleoDeth = {mu_oleoDeth} cP')
+    mu_oleoD = co.visco_oleoD_BEAL_STAN(api,Tr)
+    print(f'mu_oleoDeth = {mu_oleoD} cP')
 
-    mu_oleoSb = co.visco_oleoS_BEAL_STAN(mu_oleoDeth,Rs)
-    print(f'mu_oleoSatu = {mu_oleoSb} cP')
+    mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD,Rs)
+    print(f'mu_oleoSatu = {mu_oleoS} cP')
+
+    mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
+    print(f'mu_oleoSubSatu = {mu_oleoSubS} cP')
 
     print(f'Co = {Co} 1/psia')
 
-'''#Para comparar as correlações de Co
-    if Ppsi >= Pb:
-        RsPB = co.RAZAO_PB(dg,api,Tf,Pb)
-        BoPB = co.BO_PB(do,dg,RsPB,Tf)
-        rho_Pb = co.RHO_PB(do,dg,RsPB,BoPB)
-        CoPB = co.Co_PB(rho_Pb,Pb,Ppsi)
-        print(f'CoPB = {CoPB} 1/psia')'''
+    #Resultados Do Óleo
+
+    print('\n' + '='*30)
+    print('       RESULTADOS DO ÁGUA       ')
+    print('='*30)
+
+    rho_w = ca.rho_w(S)
+    print(f'rho_agua = {rho_w} lb/SCF')
+
+    Rsw = ca.Rsw(Ppsi, Tf)
+    print(f'Rsw = {Rsw} sm3/sm3')
+
+    Bw = ca.Bww(Ppsi, Tf)
+    print(f'Bw = {Bw} bbl/STB')
+
     
