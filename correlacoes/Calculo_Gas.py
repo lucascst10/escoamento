@@ -62,34 +62,3 @@ def visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr):
 
     mu_gas = (1 * 10**-4) * kv * np.exp(xv * (rho_gas / 62.4) ** yv)
     return mu_gas
-
-
-'''def compressibilidade_gas(P_pc, P_pr, T_pr, Z):
-    dZ = (-3.53 / (10 ** (0.9813 * T_pr))) + (
-        (2 * 0.274 * P_pr) / (10 ** (0.8157 * T_pr))
-    )
-    Cg = (1 / (P_pr * P_pc)) - (1 / (Z * P_pc) * dZ)
-    return Cg'''
-
-
-'''def compressibilidade_gas(Ppsi, Tr, dg, delta_p=5.0):
-    """
-    Calcula Cg [1/psi] usando derivada numérica e Z_Brill.
-    
-    Ppsi : pressão [psia]
-    Tr   : temperatura [°R]
-    dg   : densidade relativa do gás
-    delta_p : incremento para derivada [psia]
-    """
-    # Z no ponto
-    Z = Z_Brill(Ppsi, Tr, dg)
-    
-    # Derivada numérica (diferença central)
-    Z_plus = Z_Brill(Ppsi + delta_p, Tr, dg)
-    Z_minus = Z_Brill(max(Ppsi - delta_p, 1.0), Tr, dg)
-    dZdp = (Z_plus - Z_minus) / (2 * delta_p)
-    
-    # Compressibilidade isotérmica
-    Cg = (1.0 / Ppsi) * (1.0 - (Ppsi / Z) * dZdp)
-    
-    return Cg'''
