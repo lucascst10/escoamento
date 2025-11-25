@@ -1,8 +1,11 @@
 import numpy as np
 
+
 def rho_w(S):
-    rho_w = 62.368 + 0.438603*S + 1.60074*10**(-3)*S**2
+    rho_w = 62.368 + 0.438603 * S + 1.60074 * 10 ** (-3) * S**2  # lb/ft3
+    rho_w = rho_w * 16.0185  # kg/m3
     return rho_w
+
 
 def Rsw(Ppsi, Tf):
     # Coeficientes A
@@ -10,13 +13,13 @@ def Rsw(Ppsi, Tf):
     A1 = -6.12265e-2
     A2 = 1.91663e-4
     A3 = -2.1654e-7
-    
+
     # Coeficientes B
     B0 = 1.01021e-2
     B1 = -7.44241e-5
     B2 = 3.05553e-7
     B3 = -2.94883e-10
-    
+
     # Coeficientes C
     C0 = -9.02505
     C1 = 0.130237
@@ -30,12 +33,20 @@ def Rsw(Ppsi, Tf):
 
     Rsw = A + B * Ppsi + C * Ppsi**2
 
-    return Rsw*0.178108 # sm3/sm3
+    return Rsw * 0.178108  # sm3/sm3
+
 
 def Bww(Ppsi, Tf):
-    delta_VwT = -1.0001*10**(-2) + 1.333191*10**(-4) * Tf + 5.50654*10**(-7)*Tf**2
-    delta_VwP = -1.95301*10**(-9)*Ppsi*Tf - 1.72834*10**(-13)*Ppsi**2*Tf - 3.58922*10**(-7)*Ppsi - 2.25341*10**(-10)*Ppsi**2
+    delta_VwT = (
+        -1.0001 * 10 ** (-2) + 1.333191 * 10 ** (-4) * Tf + 5.50654 * 10 ** (-7) * Tf**2
+    )
+    delta_VwP = (
+        -1.95301 * 10 ** (-9) * Ppsi * Tf
+        - 1.72834 * 10 ** (-13) * Ppsi**2 * Tf
+        - 3.58922 * 10 ** (-7) * Ppsi
+        - 2.25341 * 10 ** (-10) * Ppsi**2
+    )
 
     Bw = (1 + delta_VwT) * (1 + delta_VwP)
-    
-    return Bw # bbl/STB
+
+    return Bw  # bbl/STB
