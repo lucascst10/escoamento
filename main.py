@@ -8,31 +8,98 @@ from correlacoes import Calculo_agua as ca
 from correlacoes import Calculo_Oleo as co
 from correlacoes import Calculo_Gas as cg
 
-def formulacao(rho, v_m, mu_m, ap, d_h, epsilon, theta, vazao_massica_m, titulo, temperatura, M_g, P):
+
+def formulacao(
+    rho,
+    v_m,
+    mu_m,
+    ap,
+    d_h,
+    epsilon,
+    theta,
+    vazao_massica_m,
+    titulo,
+    temperatura,
+    M_g,
+    P,
+):
     R = 8.314
     reynolds = rho * v_m * d_h / mu_m
-    fator_atrito = 0.0055 * (1 + ((2e4*epsilon /d_h) + (1e6/reynolds))**(1/3))
-    dp_dl_atrito = -fator_atrito * rho * v_m**2 / (2*d_h)
+    fator_atrito = 0.0055 * (1 + ((2e4 * epsilon / d_h) + (1e6 / reynolds)) ** (1 / 3))
+    dp_dl_atrito = -fator_atrito * rho * v_m**2 / (2 * d_h)
     dp_dl_gravidade = -rho * 9.71 * np.sin(theta)
-    E = -vazao_massica_m**2 * titulo * R * temperatura/(ap**2 * M_g * P**2) 
+    E = -(vazao_massica_m**2) * titulo * R * temperatura / (ap**2 * M_g * P**2)
 
     dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 + E)
     dp_dl_aceleracao = E * dp_dl_total
     return dp_dl_total
 
 
-def perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, bw, bg, rs, rsw, ap, d_h, epsilon, theta_1, theta_2, M_g, P, comprimento, elementos):
-    rho_l = bsw * rho_w + (1-bsw) * rho_o
-    mu_l = bsw * mu_w + (1-bsw) * mu_o
-    
+def calcula_PVT(P,T):
+        S=0
+        Mg_g, Tr, Tk = cg.gas_conversoes_precalc(M_air_g, Tf, dg)
 
-    def vazoes():
+        P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
+        P_pr, T_pr = cg.psedo_reduzida(Ppsi, Tr, dg)
+        Z = cg.Z_Brill(Ppsi, Tr, dg)
+        Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
+        Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
+
+        rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
+        mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
+
+        # Resultados Do Óleo
+        Tr, do = co.oleo_conversoes_precalc(Tf, api)
+        Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
+        Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
+        Co = co.compressibilidade_oleo(
+            Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb
+        )
+        Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
+        rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
+        mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr)
+        mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs)
+
+        mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
+        # Resultados Da Água
+        rho_w = ca.rho_w(S)
+        Rsw = ca.Rsw(Ppsi, Tf)
+        Bw = ca.Bww(Ppsi, Tf)
+        return rho_w, rho_g, rho_o, mu_oleoS, mu_oleoD, mu_oleoSubS, mu_g, Rsw, Bw, Bo, Bg_m3, Rs, Pb, Co, Z
+
+def perda_de_carga(
+    v_lsc,
+    bsw,
+    rho_o,
+    rho_w,
+    rho_g,
+    mu_g,
+    mu_o,
+    mu_w,
+    rgl,
+    bo,
+    bw,
+    bg,
+    rs,
+    rsw,
+    ap,
+    d_h,
+    epsilon,
+    theta_1,
+    theta_2,
+    M_g,
+    P,
+    comprimento,
+    elementos,
+):
+
+    def vazoes(rho_l):
         v_wsc = v_lsc * bsw
-        v_osc = v_lsc (1- bsw)
+        v_osc = v_lsc(1 - bsw)
         v_gsc = rgl * v_lsc
 
         vazao_l = (v_osc * bo) + (v_wsc * bw)
-        vazao_g = bg* (v_gsc - (v_osc*rs) - (v_wsc*rsw))
+        vazao_g = bg * (v_gsc - (v_osc * rs) - (v_wsc * rsw))
 
         vazao_massica_l = rho_l * vazao_l
         vazao_massica_g = rho_l * vazao_g
@@ -50,7 +117,6 @@ def perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, b
 
         return v_sl, v_sg, holdup_l_ns
 
-
     vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = vazoes()
     titulo = vazao_massica_g / vazao_massica_m
     v_sl, v_sg, holdup_l_ns = velocidades()
@@ -67,20 +133,37 @@ def perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, b
 
         temperatura = calcular_temperatura()
 
-        def calcular_perda_de_carga(pressao):
-            rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
-            temperatura = calcular_temperatura()
-            dp_dl_total = formulacao(rho_m, v_m, mu_m, ap, d_h, epsilon, theta_1 , vazao_massica_m, titulo, temperatura, M_g, pressao)
+        def calcular_perda_de_carga(pressao, temperatura):
+            rho_w, rho_g, rho_o, mu_oleoS, mu_oleoD, mu_oleoSubS, mu_g, Rsw, Bw, Bo, Bg_m3, Rs, Pb, Co, Z = calcula_PVT(pressao, temperatura)
+            if pressao>Pb:
+                rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
+            else:
+                rho_m, mu_m = driftflux(v_sg, v_m, v_sl, rho_g, rho_l, p_atm, P, g, d_h, sigma_l, theta, mu_l, mu_g)
+            dp_dl_total = formulacao(
+                rho_m,
+                v_m,
+                mu_m,
+                ap,
+                d_h,
+                epsilon,
+                theta_1,
+                vazao_massica_m,
+                titulo,
+                temperatura,
+                M_g,
+                pressao,
+            )
             return dp_dl_total
-        
-        L=0
+
+        L = 0
         PRESSAO = []
         for i in range(len(temperatura)):
-            dp_dl = calcular_perda_de_carga(P)    
-            p = p + dp_dl*L
+            dp_dl = calcular_perda_de_carga(P, temperatura[i])
+            p = p + dp_dl * L
             PRESSAO.append(p)
             L += dl
         return PRESSAO
+
     pressaaaaao = primeiro_trecho()
     return rho_l
 
@@ -126,36 +209,3 @@ if __name__ == "__main__":
 
     S = 0
     # Resultados do Gás
-
-    Mg_g, Tr, Tk = cg.gas_conversoes_precalc(M_air_g, Tf, dg)
-
-    P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
-    P_pr, T_pr = cg.psedo_reduzida(Ppsi, Tr, dg)
-    Z = cg.Z_Brill(Ppsi, Tr, dg)
-    Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
-    Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
-
-    rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
-    mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
-
-    # Resultados Do Óleo
-    Tr, do = co.oleo_conversoes_precalc(Tf, api)
-    Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
-    Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
-    Co = co.compressibilidade_oleo(
-        Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb
-    )
-    Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
-    rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
-    mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr)
-    mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs)
-
-    mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
-    # Resultados Da Água
-    rho_w = ca.rho_w(S)
-    Rsw = ca.Rsw(Ppsi, Tf)
-
-    Bw = ca.Bww(Ppsi, Tf)
-    
-
-    teste = perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, bw, bg, rs, rsw, ap, d_h, epsilon, theta_1, theta_2, M_g, P, comprimento, elementos)
