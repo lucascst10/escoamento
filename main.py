@@ -1,27 +1,88 @@
 # main.py
 
 import numpy as np
-from DriftFlux import driftflux 
+import pandas as pd
+from modelos import driftflux, homogeneo
 
 from correlacoes import Calculo_agua as ca
 from correlacoes import Calculo_Oleo as co
 from correlacoes import Calculo_Gas as cg
 
+def formulacao(rho, v_m, mu_m, ap, d_h, epsilon, theta, vazao_massica_m, titulo, temperatura, M_g, P):
+    R = 8.314
+    reynolds = rho * v_m * d_h / mu_m
+    fator_atrito = 0.0055 * (1 + ((2e4*epsilon /d_h) + (1e6/reynolds))**(1/3))
+    dp_dl_atrito = -fator_atrito * rho * v_m**2 / (2*d_h)
+    dp_dl_gravidade = -rho * 9.71 * np.sin(theta)
+    E = -vazao_massica_m**2 * titulo * R * temperatura/(ap**2 * M_g * P**2) 
 
-def primeiro_trecho(
-    comprimento, elementos
-):  # Função para calcular tanto a variação da temperatura e da perda de carga para o trecho reservatório - cabeça de poço
-    dl = comprimento / elementos
+    dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 + E)
+    dp_dl_aceleracao = E * dp_dl_total
+    return dp_dl_total
 
-    def calcular_temperatura():
-        temperatura = np.zeros(dl)
+
+def perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, bw, bg, rs, rsw, ap, d_h, epsilon, theta_1, theta_2, M_g, P, comprimento, elementos):
+    rho_l = bsw * rho_w + (1-bsw) * rho_o
+    mu_l = bsw * mu_w + (1-bsw) * mu_o
+    
+
+    def vazoes():
+        v_wsc = v_lsc * bsw
+        v_osc = v_lsc (1- bsw)
+        v_gsc = rgl * v_lsc
+
+        vazao_l = (v_osc * bo) + (v_wsc * bw)
+        vazao_g = bg* (v_gsc - (v_osc*rs) - (v_wsc*rsw))
+
+        vazao_massica_l = rho_l * vazao_l
+        vazao_massica_g = rho_l * vazao_g
+        v_m = vazao_l + vazao_g
+        vazao_massica_m = vazao_massica_g + vazao_massica_l
+
+        return vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m
+
+    def velocidades():
+        v_l, v_g = vazoes
+        v_sl = v_l / ap
+        v_sg = v_g / ap
+
+        holdup_l_ns = v_sl / (v_l + v_g)
+
+        return v_sl, v_sg, holdup_l_ns
+
+
+    vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = vazoes()
+    titulo = vazao_massica_g / vazao_massica_m
+    v_sl, v_sg, holdup_l_ns = velocidades()
+
+    def primeiro_trecho():  # Função para calcular tanto a variação da temperatura e da perda de carga para o trecho reservatório - cabeça de poço
+        dl = comprimento / elementos
+
+        def calcular_temperatura():
+            temperatura = np.zeros(dl)
+            for i in range(len(temperatura)):
+                temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
+                comprimento += dl
+            return temperatura
+
+        temperatura = calcular_temperatura()
+
+        def calcular_perda_de_carga(pressao):
+            rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
+            temperatura = calcular_temperatura()
+            dp_dl_total = formulacao(rho_m, v_m, mu_m, ap, d_h, epsilon, theta_1 , vazao_massica_m, titulo, temperatura, M_g, pressao)
+            return dp_dl_total
+        
+        L=0
+        PRESSAO = []
         for i in range(len(temperatura)):
-            temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
-            comprimento += dl
-        return temperatura
-
-    def calcular_perda_de_carga():
-        return
+            dp_dl = calcular_perda_de_carga(P)    
+            p = p + dp_dl*L
+            PRESSAO.append(p)
+            L += dl
+        return PRESSAO
+    pressaaaaao = primeiro_trecho()
+    return rho_l
 
 
 if __name__ == "__main__":
@@ -74,8 +135,8 @@ if __name__ == "__main__":
     Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
     Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
 
-    rho_gas = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
-    mu_gas = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
+    rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
+    mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
 
     # Resultados Do Óleo
     Tr, do = co.oleo_conversoes_precalc(Tf, api)
@@ -95,3 +156,6 @@ if __name__ == "__main__":
     Rsw = ca.Rsw(Ppsi, Tf)
 
     Bw = ca.Bww(Ppsi, Tf)
+    
+
+    teste = perda_de_carga(v_lsc, bsw, rho_o, rho_w, rho_g, mu_g, mu_o, mu_w, rgl, bo, bw, bg, rs, rsw, ap, d_h, epsilon, theta_1, theta_2, M_g, P, comprimento, elementos)
