@@ -84,23 +84,12 @@ def calcula_PVT(P, T):
         Co,
         Z,
         mu_w,
-        api
+        api,
     )
 
 
 def perda_de_carga(
-    v_lsc,
-    bsw,
-    rgl,
-    ap,
-    d_h,
-    epsilon,
-    theta,
-    M_g,
-    pressao,
-    temperatura,
-    dl,
-    L
+    v_lsc, bsw, rgl, ap, d_h, epsilon, theta, M_g, pressao, temperatura, dl, L
 ):
     def vazoes(v_lsc, bo, bw, bg, rs, rsw, rho_l):
         v_wsc = v_lsc * bsw
@@ -132,7 +121,6 @@ def perda_de_carga(
             temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
             comprimento += dl
         return temperatura
-
 
     def calcular_perda_de_carga():
         (
@@ -248,31 +236,71 @@ if __name__ == "__main__":
 
     RGL = 300  # [sm3/sm3]
     RGO = RGL * 5.61458 / (1 - BSW)  # [scf/stb]
-    
 
     comprimento_primeiro_trecho = 150 / np.sin(theta_1)  # metros
     comprimento_segundo_trecho = 150 / np.sin(theta_2)
     comprimento_terceiro_trecho = 1500
-    comprimento_total = comprimento_terceiro_trecho + comprimento_primeiro_trecho + comprimento_segundo_trecho
+    comprimento_total = (
+        comprimento_terceiro_trecho
+        + comprimento_primeiro_trecho
+        + comprimento_segundo_trecho
+    )
 
     elementos = 1000
-    dl = comprimento_total/elementos
+    dl = comprimento_total / elementos
     pressao = np.zeros(dl)
     pressao[0] = p
     d_h = 0.0254 * 7
-    ap = np.pi()* d_h**2 / 4
+    ap = np.pi() * d_h**2 / 4
     epsilon = 0.0075 * 0.0254
     L = 0
     Mg_ar = 0.02896
     M_g = dg * Mg_ar
     for i in range(len(pressao)):
         if L < comprimento_primeiro_trecho:
-            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_1, M_g, pressao[i], temperatura, dl, L)
+            dp_dl = perda_de_carga(
+                v_lsc,
+                bsw,
+                rgl,
+                ap,
+                d_h,
+                epsilon,
+                theta_1,
+                M_g,
+                pressao[i],
+                temperatura,
+                dl,
+                L,
+            )
         elif L < comprimento_segundo_trecho:
-            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_2, M_g, pressao[i], temperatura, dl, L)
+            dp_dl = perda_de_carga(
+                v_lsc,
+                bsw,
+                rgl,
+                ap,
+                d_h,
+                epsilon,
+                theta_2,
+                M_g,
+                pressao[i],
+                temperatura,
+                dl,
+                L,
+            )
         else:
-            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_3, M_g, pressao[i], temperatura, dl, L)
+            dp_dl = perda_de_carga(
+                v_lsc,
+                bsw,
+                rgl,
+                ap,
+                d_h,
+                epsilon,
+                theta_3,
+                M_g,
+                pressao[i],
+                temperatura,
+                dl,
+                L,
+            )
 
-        pressao[i+1] = pressao[i] + dp_dl*L
-    
-
+        pressao[i + 1] = pressao[i] + dp_dl * L
