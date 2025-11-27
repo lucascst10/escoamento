@@ -62,29 +62,53 @@ def calcula_PVT(P, T):
 
     mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb) #cP
     mu_w = ca.mu_w(P, T) #cP
+    
     # Resultados Da Água
     rho_w = ca.rho_w(S) # lb/SCF
     Rsw = ca.Rsw(Ppsi, Tf) # sm3/sm3
     Bw = ca.Bww(Ppsi, Tf) # bbl/STB
     api = (141.5 / do) - 131.5
+    mu_w = ca.mu_w(P, T) #cP
+
+
+    #Conversões
+    rho_w_SI = rho_w * 16.01846 #kg/m3
+    rho_g_SI = rho_g * 16.01846 #kg/m3
+    rho_o_SI = rho_o * 16.01846 #kg/m3
+
+    mu_oleoD_SI = mu_oleoD * 0.001 #Pa.s
+    mu_oleoS_SI = mu_oleoS * 0.001 #Pa.s
+    mu_oleoSubS_SI = mu_oleoSubS * 0.001 #pa.s
+    mu_g_SI = mu_g * 0.001 #Pa.s
+    
+    Rs_SI = Rs * 0.178108 #sm3/sme
+    Rsw_SI = Rsw #sm3/sm3
+    Bw_SI = Bw * 0.158987 #m3/sm3
+    Bo_SI = Bo * 0.158987 #m3/sm3
+    Bg_SI = Bg_m3 #m3/sm3
+    Pb_SI = Pb * 6894.75729 #Pa
+    Co_SI = Co/6894.75729 #1/Pa
+    mu_w_SI = mu_w * 0.001 # Pa.s
+    print(rho_g_SI)
+
     return (
-        rho_w,
-        rho_g,
-        rho_o,
-        mu_oleoS,
-        mu_oleoD,
-        mu_oleoSubS,
-        mu_g,
-        Rsw,
-        Bw,
-        Bo,
-        Bg_m3,
-        Rs,
-        Pb,
-        Co,
-        Z,
-        mu_w,
-        api,
+    rho_w_SI,
+    rho_g_SI,
+    rho_o_SI,
+    mu_oleoS_SI,
+    mu_oleoD_SI,
+    mu_oleoSubS_SI,
+    mu_g_SI,
+    Rsw_SI,
+    Bw_SI,
+    Bo_SI,
+    Bg_SI,
+    Rs_SI,
+    Pb_SI,
+    Co_SI,
+    Z,
+    mu_w_SI,
+    api,
     )
 
 
