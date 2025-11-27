@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def calc_Temp(dl, C_p, m_gas, m_liquido, T_0):
+def calc_Temp(dl, m_total, T_0):
     g = 9.81  # m/s²
-
+    SG = 0.72
     # Cálculo da temperatura externa
     if dl < 579.55:
         T_inf = 80 - 0.1277 * dl
@@ -18,7 +18,7 @@ def calc_Temp(dl, C_p, m_gas, m_liquido, T_0):
         theta_rad = 90 * np.pi / 180  # rad
         TEC = 1  # W/mK
 
-    m_total = m_gas + m_liquido
+    C_p = ((2*10**(-3)*T_0 - 1.429)*SG + (2.67*10**(-3))*T_0 + 0.352)*10**(-3) #J/(Kg*°C)
 
     # T_0 é a temperatura anterior, a inicial no poço é igual à 80°C.
     T = (

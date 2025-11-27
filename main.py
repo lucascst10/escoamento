@@ -2,11 +2,13 @@
 
 import numpy as np
 import pandas as pd
-from modelos import driftflux, homogeneo
+
 
 from correlacoes import Calculo_agua as ca
 from correlacoes import Calculo_Oleo as co
 from correlacoes import Calculo_Gas as cg
+from modelos import *
+from Temperature import *
 
 
 def formulacao(
@@ -37,6 +39,7 @@ def formulacao(
 
 def calcula_PVT(P, T):
     S = 0
+    api = 23
     Mg_g, Tr, Tk = cg.gas_conversoes_precalc(M_air_g, Tf, dg)
 
     P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
@@ -67,7 +70,6 @@ def calcula_PVT(P, T):
     rho_w = ca.rho_w(S) # lb/SCF
     Rsw = ca.Rsw(Ppsi, Tf) # sm3/sm3
     Bw = ca.Bww(Ppsi, Tf) # bbl/STB
-    api = (141.5 / do) - 131.5
     mu_w = ca.mu_w(P, T) #cP
 
 
@@ -108,6 +110,7 @@ def calcula_PVT(P, T):
     Z,
     mu_w_SI,
     api,
+    do
     )
 
 
@@ -116,7 +119,7 @@ def perda_de_carga(
 ):
     def vazoes(v_lsc, bo, bw, bg, rs, rsw, rho_l):
         v_wsc = v_lsc * bsw
-        v_osc = v_lsc(1 - bsw)
+        v_osc = v_lsc*(1 - bsw)
         v_gsc = rgl * v_lsc
 
         vazao_l = (v_osc * bo) + (v_wsc * bw)
@@ -130,7 +133,7 @@ def perda_de_carga(
         return vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m
 
     def velocidades(vazao_l, vazao_g, ap):
-        vazao_l, vazao_g = vazoes
+        #vazao_l, vazao_g = vazoes
         v_sl = vazao_l / ap
         v_sg = vazao_g / ap
 
@@ -138,12 +141,7 @@ def perda_de_carga(
 
         return v_sl, v_sg, holdup_l_ns
 
-    def calcular_temperatura():
-        temperatura = np.zeros(dl)
-        for i in range(len(temperatura)):
-            temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
-            comprimento += dl
-        return temperatura
+    
 
     def calcular_perda_de_carga():
         (
@@ -163,6 +161,8 @@ def perda_de_carga(
             Co,
             Z,
             mu_w,
+            api,
+            do
         ) = calcula_PVT(pressao, temperatura)
         rho_l = bsw * rho_w + (1 - bsw) * rho_o
 
@@ -175,7 +175,7 @@ def perda_de_carga(
             mu_l = bsw * mu_w(1 - bsw) * mu_oleoSubS
             rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
         else:
-            mu_l = bsw * mu_w(1 - bsw) * mu_oleoS
+            mu_l = bsw * mu_w*(1 - bsw) * mu_oleoS
             rho_m, mu_m = driftflux(
                 v_sg,
                 v_m,
@@ -193,7 +193,7 @@ def perda_de_carga(
             )
 
         vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = (
-            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw)
+            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l)
         )
         titulo = vazao_massica_g / vazao_massica_m
 
@@ -211,11 +211,13 @@ def perda_de_carga(
             M_g,
             pressao,
         )
-        return dp_dl_total
+        return dp_dl_total, do, vazao_massica_m
 
-    dp_dl = calcular_perda_de_carga()
+    dp_dl, do, vazao_massica_m = calcular_perda_de_carga()
 
-    return dp_dl
+    temp = calc_Temp(L, vazao_massica_m, Tc)
+
+    return dp_dl, temp
 
 
 if __name__ == "__main__":
@@ -245,8 +247,9 @@ if __name__ == "__main__":
     M_air_g = 28.966  # g/mol
 
     # PARAMETROS DE ENTRADA
-    dg = 0.72
     api = 23
+    do = 141.5/(api + 131.5)
+    dg = 0.72
 
     # Local de observação
     Tc = 80  # °C
@@ -271,17 +274,18 @@ if __name__ == "__main__":
 
     elementos = 1000
     dl = comprimento_total / elementos
-    pressao = np.zeros(dl)
+    pressao = np.zeros(elementos)
+    temperatura = np.zeros(elementos)
     pressao[0] = p
+    temperatura[0] = Tc
     d_h = 0.0254 * 7
-    ap = np.pi() * d_h**2 / 4
+    ap = np.pi * d_h**2 / 4
     epsilon = 0.0075 * 0.0254
-    L = 0
     Mg_ar = 0.02896
     M_g = dg * Mg_ar
-    for i in range(len(pressao)):
+    for L in range(len(pressao)-1):
         if L < comprimento_primeiro_trecho:
-            dp_dl = perda_de_carga(
+            dp_dl, t_now = perda_de_carga(
                 v_lsc,
                 bsw,
                 rgl,
@@ -290,13 +294,13 @@ if __name__ == "__main__":
                 epsilon,
                 theta_1,
                 M_g,
-                pressao[i],
-                temperatura,
+                pressao[L],
+                temperatura[L],
                 dl,
-                L,
+                L
             )
         elif L < comprimento_segundo_trecho:
-            dp_dl = perda_de_carga(
+            dp_dl, t_now = perda_de_carga(
                 v_lsc,
                 bsw,
                 rgl,
@@ -305,13 +309,13 @@ if __name__ == "__main__":
                 epsilon,
                 theta_2,
                 M_g,
-                pressao[i],
-                temperatura,
+                pressao[L],
+                temperatura[L],
                 dl,
-                L,
+                L
             )
         else:
-            dp_dl = perda_de_carga(
+            dp_dl, t_now = perda_de_carga(
                 v_lsc,
                 bsw,
                 rgl,
@@ -320,10 +324,12 @@ if __name__ == "__main__":
                 epsilon,
                 theta_3,
                 M_g,
-                pressao[i],
-                temperatura,
+                pressao[L],
+                temperatura[L],
                 dl,
-                L,
+                L
             )
 
-        pressao[i + 1] = pressao[i] + dp_dl * L
+        pressao[L+1] = pressao[L] + dp_dl * dl
+        temperatura[L+1] = t_now
+        
