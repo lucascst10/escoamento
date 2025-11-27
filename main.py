@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 from correlacoes import Calculo_agua as ca
@@ -204,20 +205,20 @@ def perda_de_carga(
             ap,
             d_h,
             epsilon,
-            theta_1,
+            theta,
             vazao_massica_m,
             titulo,
             temperatura,
             M_g,
             pressao,
         )
-        return dp_dl_total, do, vazao_massica_m
+        return dp_dl_total, do, vazao_massica_m, holdup_l_ns, Bo, Bg_m3
 
-    dp_dl, do, vazao_massica_m = calcular_perda_de_carga()
+    dp_dl, do, vazao_massica_m, holdup_l_ns, Bo, Bg_m3 = calcular_perda_de_carga()
 
     temp = calc_Temp(L, vazao_massica_m, Tc)
 
-    return dp_dl, temp
+    return dp_dl, temp, holdup_l_ns, Bo, Bg_m3
 
 
 if __name__ == "__main__":
@@ -226,7 +227,7 @@ if __name__ == "__main__":
     theta_2 = 10  # Trecho manifold
     theta_3 = 90
     bsw = 0.2
-    rgl = 300  # Razão Gás-líquido
+    rgl = 200  # Razão Gás-líquido
     api = 23  # Grau API
     p = 500 * 100000  # Pressão no reservatório [Pa]
     sigma_og = 0.00841  # [N/m]
@@ -256,7 +257,7 @@ if __name__ == "__main__":
     Tf = (Tc * 1.8) + 32  # °F
 
     Pbar = 500  # bar
-    Ppsi = Pbar * 14.5037738  # psia'''
+    Ppsi = Pbar * 14.5037738  # psia
 
     BSW = 0.2
 
@@ -276,6 +277,9 @@ if __name__ == "__main__":
     dl = comprimento_total / elementos
     pressao = np.zeros(elementos)
     temperatura = np.zeros(elementos)
+    holdups = np.zeros(elementos)
+    Bo_array = np.zeros(elementos)
+    Bg_array = np.zeros(elementos)
     pressao[0] = p
     temperatura[0] = Tc
     d_h = 0.0254 * 7
@@ -283,53 +287,74 @@ if __name__ == "__main__":
     epsilon = 0.0075 * 0.0254
     Mg_ar = 0.02896
     M_g = dg * Mg_ar
-    for L in range(len(pressao)-1):
-        if L < comprimento_primeiro_trecho:
-            dp_dl, t_now = perda_de_carga(
-                v_lsc,
-                bsw,
-                rgl,
-                ap,
-                d_h,
-                epsilon,
-                theta_1,
-                M_g,
-                pressao[L],
-                temperatura[L],
-                dl,
-                L
-            )
-        elif L < comprimento_segundo_trecho:
-            dp_dl, t_now = perda_de_carga(
-                v_lsc,
-                bsw,
-                rgl,
-                ap,
-                d_h,
-                epsilon,
-                theta_2,
-                M_g,
-                pressao[L],
-                temperatura[L],
-                dl,
-                L
-            )
-        else:
-            dp_dl, t_now = perda_de_carga(
-                v_lsc,
-                bsw,
-                rgl,
-                ap,
-                d_h,
-                epsilon,
-                theta_3,
-                M_g,
-                pressao[L],
-                temperatura[L],
-                dl,
-                L
-            )
 
-        pressao[L+1] = pressao[L] + dp_dl * dl
-        temperatura[L+1] = t_now
-        
+    compr1 = comprimento_primeiro_trecho
+    compr2 = comprimento_primeiro_trecho + comprimento_segundo_trecho
+
+    for i in range(elementos-1):
+        posicao = i * dl
+        if posicao < compr1:
+            theta = theta_1
+        elif posicao < compr2:
+            theta = theta_2
+        else:
+            theta = theta_3
+
+        dp_dl, t_now, holdup, Bo_local, Bg_local = perda_de_carga(
+            v_lsc,
+            bsw,
+            rgl,
+            ap,
+            d_h,
+            epsilon,
+            theta,
+            M_g,
+            pressao[i],
+            temperatura[i],
+            dl,
+            posicao
+        )
+
+        pressao[i+1] = pressao[i] + dp_dl * dl
+        temperatura[i+1] = t_now
+        holdups[i] = holdup
+        Bo_array[i] = Bo_local
+        Bg_array[i] = Bg_local
+    
+    L_vector = np.linspace(0, comprimento_total, elementos)
+    
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector, pressao)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Pressão [Pa]")
+    plt.title("Perfil de pressão ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector, temperatura)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Temperatura [°C]")
+    plt.title("Perfil de temperatura ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector, holdups)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Hold-up de líquido [-]")
+    plt.title("Perfil de hold-up de líquido ao longo do duto")
+    plt.grid(True)
+    plt.show()
+    
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector, Bg_array, label="Bg")
+    plt.plot(L_vector, Bo_array, label="Bo")
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Fatores de formação [m³/sm³]")
+    plt.title("Perfil de Bg e Bo ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()

@@ -35,7 +35,7 @@ def compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, P
     else:
         Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
         Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
-        print(f"Bg = {Bg_bbl} bbl/SCF")
+        #print(f"Bg = {Bg_bbl} bbl/SCF")
         Bo = 0.9759 + 0.00012 * ((Rs * (dg / do) ** 0.5) + (1.25 * Tf)) ** 1.2
         dp = 1e-1
         P_dp = Ppsi + dp
@@ -43,8 +43,8 @@ def compressibilidade_oleo(Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, P
         dRs_dp = (Rs_var - Rs) / dp
         Bo_var = 0.9759 + 0.00012 * ((Rs_var * (dg / do) ** 0.5) + (1.25 * Tf)) ** 1.2
         dBo_dp = (Bo_var - Bo) / dp
-        if dBo_dp > (Bg_bbl * dRs_dp):
-            print("O resultado será inconsistente")
+        #if dBo_dp > (Bg_bbl * dRs_dp):
+            #print("O resultado será inconsistente")
         Co = -((1 / Bo) * dBo_dp) + ((Bg_bbl / Bo) * dRs_dp)
         Rs = razao_solubilidade_STANDING(dg, api, Tf, Ppsi, Pb)
         Bo = 0.9759 + 0.00012 * ((Rs * (dg / do) ** 0.5) + (1.25 * Tf)) ** 1.2
@@ -93,7 +93,7 @@ def visco_oleoS_BEAL_STAN(mu_oleoD, Rs):
 
 def visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb):
     mu_oS_Pb = visco_oleoS_BEAL_STAN(mu_oleoD, RGO)
-    print(f"mu_oSatuPb = {mu_oS_Pb} cP")
+    #print(f"mu_oSatuPb = {mu_oS_Pb} cP")
     return mu_oS_Pb + (
         0.001 * (Ppsi - Pb) * (0.024 * mu_oS_Pb**1.6 + 0.038 * mu_oS_Pb**0.56)
     )
