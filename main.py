@@ -81,10 +81,10 @@ def calcula_PVT(P, T):
     mu_oleoSubS_SI = mu_oleoSubS * 0.001 #pa.s
     mu_g_SI = mu_g * 0.001 #Pa.s
     
-    Rs_SI = Rs * 0.178108 #sm3/sme
+    Rs_SI = Rs * 0.178108 #sm3/sm3
     Rsw_SI = Rsw #sm3/sm3
-    Bw_SI = Bw * 0.158987 #m3/sm3
-    Bo_SI = Bo * 0.158987 #m3/sm3
+    Bw_SI = Bw #m3/sm3
+    Bo_SI = Bo #m3/sm3
     Bg_SI = Bg_m3 #m3/sm3
     Pb_SI = Pb * 6894.75729 #Pa
     Co_SI = Co/6894.75729 #1/Pa
