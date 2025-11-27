@@ -5,6 +5,7 @@ def driftflux(
     v_sg, v_m, v_sl, rho_g, rho_l, p_atm, P, g, d_h, sigma_l, theta, mu_l, mu_g
 ):
     def wold_ghajar():
+        #print(f"v_sg:{v_sg,}, vm:{v_m}, v_sl:{v_sl}, v_sg:{v_sg}, rho_g:{rho_g}, rho_l:{rho_l}")
         C_0 = (v_sg / v_m) * (1 + ((v_sl / v_sg) ** ((rho_g / rho_l) ** 0.1)))
         k7 = (
             (g * d_h * sigma_l * (1 + np.cos(theta)) * (rho_l - rho_g)) / (rho_l**2)

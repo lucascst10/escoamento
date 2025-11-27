@@ -124,6 +124,7 @@ def perda_de_carga(
         v_gsc = rgl * v_lsc
 
         vazao_l = (v_osc * bo) + (v_wsc * bw)
+        print(f"bg:{bg}, v_gsc:{v_gsc}, v_osc:{v_osc}, rs:{rs}, v_wsc:{v_wsc}, rsw:{rsw}")
         vazao_g = bg * (v_gsc - (v_osc * rs) - (v_wsc * rsw))
 
         vazao_massica_l = rho_l * vazao_l
@@ -229,7 +230,7 @@ if __name__ == "__main__":
     bsw = 0.2
     rgl = 200  # Razão Gás-líquido
     api = 23  # Grau API
-    p = 500 * 100000  # Pressão no reservatório [Pa]
+    p = 200 * 100000  # Pressão no reservatório [Pa]
     sigma_og = 0.00841  # [N/m]
     sigma_wg = 0.004  # [N/m]
     sigma_lg = bsw * sigma_wg + (1 - bsw) * sigma_og
@@ -256,12 +257,12 @@ if __name__ == "__main__":
     Tc = 80  # °C
     Tf = (Tc * 1.8) + 32  # °F
 
-    Pbar = 500  # bar
+    Pbar = 200  # bar
     Ppsi = Pbar * 14.5037738  # psia
 
     BSW = 0.2
 
-    RGL = 300  # [sm3/sm3]
+    RGL = 200  # [sm3/sm3]
     RGO = RGL * 5.61458 / (1 - BSW)  # [scf/stb]
 
     comprimento_primeiro_trecho = 150 / np.sin(theta_1)  # metros
@@ -320,7 +321,7 @@ if __name__ == "__main__":
         holdups[i] = holdup
         Bo_array[i] = Bo_local
         Bg_array[i] = Bg_local
-    
+    print(f"p:{pressao}, t:{temperatura}")
     L_vector = np.linspace(0, comprimento_total, elementos)
     
     plt.figure(figsize=(10,5))
