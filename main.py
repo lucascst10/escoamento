@@ -89,7 +89,6 @@ def calcula_PVT(P, T):
     Pb_SI = Pb * 6894.75729 #Pa
     Co_SI = Co/6894.75729 #1/Pa
     mu_w_SI = mu_w * 0.001 # Pa.s
-    print(rho_g_SI)
 
     return (
     rho_w_SI,
