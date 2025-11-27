@@ -42,30 +42,30 @@ def calcula_PVT(P, T):
     P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
     P_pr, T_pr = cg.psedo_reduzida(Ppsi, Tr, dg)
     Z = cg.Z_Brill(Ppsi, Tr, dg)
-    Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
+    Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi) #m3/sm3
     Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
 
-    rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
-    mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
+    rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb) #lb/ft^3
+    mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr) #cP
 
     # Resultados Do Óleo
-    Tr, do = co.oleo_conversoes_precalc(Tf, api)
-    Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
-    Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
+    Tr, do = co.oleo_conversoes_precalc(Tf, api) 
+    Pb = co.ponto_bolha_stand(api, Tf, dg, RGO) # psia
+    Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO) # SCF/STB
     Co = co.compressibilidade_oleo(
         Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb
-    )
-    Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
-    rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
-    mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr)
-    mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs)
+    ) #  1/psia
+    Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO) # bbl/STB
+    rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO) #lb/ft^3"
+    mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr) #cP
+    mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs) # cP
 
-    mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
-    mu_w = ca.mu_w(P, T)
+    mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb) #cP
+    mu_w = ca.mu_w(P, T) #cP
     # Resultados Da Água
-    rho_w = ca.rho_w(S)
-    Rsw = ca.Rsw(Ppsi, Tf)
-    Bw = ca.Bww(Ppsi, Tf)
+    rho_w = ca.rho_w(S) # lb/SCF
+    Rsw = ca.Rsw(Ppsi, Tf) # sm3/sm3
+    Bw = ca.Bww(Ppsi, Tf) # bbl/STB
     api = (141.5 / do) - 131.5
     return (
         rho_w,
