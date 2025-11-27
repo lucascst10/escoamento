@@ -50,3 +50,11 @@ def Bww(Ppsi, Tf):
     Bw = (1 + delta_VwT) * (1 + delta_VwP)
 
     return Bw  # bbl/STB
+
+
+def mu_w(P, T):
+    A = 109.527
+    B = -1.12166
+    mu_w1 = A * T**B
+    mu_w = (0.9994 + 4.0295 * 10 ** (-5) * P + 3.1062 * 10 ** (-9) * P**2) * mu_w1
+    return mu_w

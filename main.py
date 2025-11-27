@@ -35,65 +35,74 @@ def formulacao(
     return dp_dl_total
 
 
-def calcula_PVT(P,T):
-        S=0
-        Mg_g, Tr, Tk = cg.gas_conversoes_precalc(M_air_g, Tf, dg)
+def calcula_PVT(P, T):
+    S = 0
+    Mg_g, Tr, Tk = cg.gas_conversoes_precalc(M_air_g, Tf, dg)
 
-        P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
-        P_pr, T_pr = cg.psedo_reduzida(Ppsi, Tr, dg)
-        Z = cg.Z_Brill(Ppsi, Tr, dg)
-        Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
-        Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
+    P_pc, T_pc = cg.psedo_critica(dg)  # psia e °R
+    P_pr, T_pr = cg.psedo_reduzida(Ppsi, Tr, dg)
+    Z = cg.Z_Brill(Ppsi, Tr, dg)
+    Bg_m3 = cg.fator_formação_gas(Ppsi, Tr, dg, Tsc_r, Psc_psi)
+    Bg_bbl = Bg_m3 / 5.615  # bbl/SCF
 
-        rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
-        mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
+    rho_g = cg.massa_especifica_gas(Ppsi, dg, Tr, Mg_g, R_lb)
+    mu_g = cg.visco_gas_Lee(Ppsi, Mg_g, dg, R_lb, Tr)
 
-        # Resultados Do Óleo
-        Tr, do = co.oleo_conversoes_precalc(Tf, api)
-        Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
-        Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
-        Co = co.compressibilidade_oleo(
-            Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb
-        )
-        Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
-        rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
-        mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr)
-        mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs)
+    # Resultados Do Óleo
+    Tr, do = co.oleo_conversoes_precalc(Tf, api)
+    Pb = co.ponto_bolha_stand(api, Tf, dg, RGO)
+    Rs = co.razao_solubilidade_STANDING(dg, api, Tf, Ppsi, RGO)
+    Co = co.compressibilidade_oleo(
+        Rs, dg, api, Tf, Tr, Ppsi, do, Tsc_r, Psc_psi, RGO, Pb
+    )
+    Bo = co.fator_formação_STANDING(do, dg, Rs, Tf, Ppsi, Co, api, RGO)
+    rho_o = co.massa_especifica_oleo(do, Rs, dg, Bo, Ppsi, Co, api, Tf, RGO)
+    mu_oleoD = co.visco_oleoD_BEAL_STAN(api, Tr)
+    mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs)
 
-        mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
-        # Resultados Da Água
-        rho_w = ca.rho_w(S)
-        Rsw = ca.Rsw(Ppsi, Tf)
-        Bw = ca.Bww(Ppsi, Tf)
-        return rho_w, rho_g, rho_o, mu_oleoS, mu_oleoD, mu_oleoSubS, mu_g, Rsw, Bw, Bo, Bg_m3, Rs, Pb, Co, Z
+    mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb)
+    mu_w = ca.mu_w(P, T)
+    # Resultados Da Água
+    rho_w = ca.rho_w(S)
+    Rsw = ca.Rsw(Ppsi, Tf)
+    Bw = ca.Bww(Ppsi, Tf)
+    api = (141.5 / do) - 131.5
+    return (
+        rho_w,
+        rho_g,
+        rho_o,
+        mu_oleoS,
+        mu_oleoD,
+        mu_oleoSubS,
+        mu_g,
+        Rsw,
+        Bw,
+        Bo,
+        Bg_m3,
+        Rs,
+        Pb,
+        Co,
+        Z,
+        mu_w,
+        api
+    )
+
 
 def perda_de_carga(
     v_lsc,
     bsw,
-    rho_o,
-    rho_w,
-    rho_g,
-    mu_g,
-    mu_o,
-    mu_w,
     rgl,
-    bo,
-    bw,
-    bg,
-    rs,
-    rsw,
     ap,
     d_h,
     epsilon,
-    theta_1,
-    theta_2,
+    theta,
     M_g,
-    P,
-    comprimento,
-    elementos,
+    pressao,
+    temperatura,
+    dl,
+    L
 ):
-
-    def vazoes(rho_l):
+    def vazoes(v_lsc, bo, bw, bg, rs, rsw, rho_l):
         v_wsc = v_lsc * bsw
         v_osc = v_lsc(1 - bsw)
         v_gsc = rgl * v_lsc
@@ -108,80 +117,113 @@ def perda_de_carga(
 
         return vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m
 
-    def velocidades():
-        v_l, v_g = vazoes
-        v_sl = v_l / ap
-        v_sg = v_g / ap
+    def velocidades(vazao_l, vazao_g, ap):
+        vazao_l, vazao_g = vazoes
+        v_sl = vazao_l / ap
+        v_sg = vazao_g / ap
 
-        holdup_l_ns = v_sl / (v_l + v_g)
+        holdup_l_ns = v_sl / (vazao_l + vazao_g)
 
         return v_sl, v_sg, holdup_l_ns
 
-    vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = vazoes()
-    titulo = vazao_massica_g / vazao_massica_m
-    v_sl, v_sg, holdup_l_ns = velocidades()
-
-    def primeiro_trecho():  # Função para calcular tanto a variação da temperatura e da perda de carga para o trecho reservatório - cabeça de poço
-        dl = comprimento / elementos
-
-        def calcular_temperatura():
-            temperatura = np.zeros(dl)
-            for i in range(len(temperatura)):
-                temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
-                comprimento += dl
-            return temperatura
-
-        temperatura = calcular_temperatura()
-
-        def calcular_perda_de_carga(pressao, temperatura):
-            rho_w, rho_g, rho_o, mu_oleoS, mu_oleoD, mu_oleoSubS, mu_g, Rsw, Bw, Bo, Bg_m3, Rs, Pb, Co, Z = calcula_PVT(pressao, temperatura)
-            if pressao>Pb:
-                rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
-            else:
-                rho_m, mu_m = driftflux(v_sg, v_m, v_sl, rho_g, rho_l, p_atm, P, g, d_h, sigma_l, theta, mu_l, mu_g)
-            dp_dl_total = formulacao(
-                rho_m,
-                v_m,
-                mu_m,
-                ap,
-                d_h,
-                epsilon,
-                theta_1,
-                vazao_massica_m,
-                titulo,
-                temperatura,
-                M_g,
-                pressao,
-            )
-            return dp_dl_total
-
-        L = 0
-        PRESSAO = []
+    def calcular_temperatura():
+        temperatura = np.zeros(dl)
         for i in range(len(temperatura)):
-            dp_dl = calcular_perda_de_carga(P, temperatura[i])
-            p = p + dp_dl * L
-            PRESSAO.append(p)
-            L += dl
-        return PRESSAO
+            temperatura[i] = 6 + 0.4933 * (comprimento - 1650)
+            comprimento += dl
+        return temperatura
 
-    pressaaaaao = primeiro_trecho()
-    return rho_l
+
+    def calcular_perda_de_carga():
+        (
+            rho_w,
+            rho_g,
+            rho_o,
+            mu_oleoS,
+            mu_oleoD,
+            mu_oleoSubS,
+            mu_g,
+            Rsw,
+            Bw,
+            Bo,
+            Bg_m3,
+            Rs,
+            Pb,
+            Co,
+            Z,
+            mu_w,
+        ) = calcula_PVT(pressao, temperatura)
+        rho_l = bsw * rho_w + (1 - bsw) * rho_o
+
+        vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = (
+            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l)
+        )
+        v_sl, v_sg, holdup_l_ns = velocidades(vazao_l, vazao_g, ap)
+
+        if pressao > Pb:
+            mu_l = bsw * mu_w(1 - bsw) * mu_oleoSubS
+            rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
+        else:
+            mu_l = bsw * mu_w(1 - bsw) * mu_oleoS
+            rho_m, mu_m = driftflux(
+                v_sg,
+                v_m,
+                v_sl,
+                rho_g,
+                rho_l,
+                p_atm,
+                pressao,
+                g,
+                d_h,
+                sigma_lg,
+                theta,
+                mu_l,
+                mu_g,
+            )
+
+        vazao_l, vazao_g, vazao_massica_l, vazao_massica_g, v_m, vazao_massica_m = (
+            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw)
+        )
+        titulo = vazao_massica_g / vazao_massica_m
+
+        dp_dl_total = formulacao(
+            rho_m,
+            v_m,
+            mu_m,
+            ap,
+            d_h,
+            epsilon,
+            theta_1,
+            vazao_massica_m,
+            titulo,
+            temperatura,
+            M_g,
+            pressao,
+        )
+        return dp_dl_total
+
+    dp_dl = calcular_perda_de_carga()
+
+    return dp_dl
 
 
 if __name__ == "__main__":
     v_lsc = 6000 / 86400
     theta_1 = 15  # Trecho reservatório
     theta_2 = 10  # Trecho manifold
+    theta_3 = 90
     bsw = 0.2
     rgl = 300  # Razão Gás-líquido
     api = 23  # Grau API
     p = 500 * 100000  # Pressão no reservatório [Pa]
     sigma_og = 0.00841  # [N/m]
     sigma_wg = 0.004  # [N/m]
+    sigma_lg = bsw * sigma_wg + (1 - bsw) * sigma_og
     tec_poco = 2  # TEC no poço [W/m.K]
     tec_marinho = 1  # TEC no ambiente marinho [W/m.K]
+    p_atm = 100000
+    g = 9.81
     S = 0
-    comprimento_primeiro_trecho = 150 / np.sin(theta_1)  # metros
 
     # Condição Standard
     Tsc_f = 60  # °F
@@ -206,6 +248,31 @@ if __name__ == "__main__":
 
     RGL = 300  # [sm3/sm3]
     RGO = RGL * 5.61458 / (1 - BSW)  # [scf/stb]
+    
 
-    S = 0
-    # Resultados do Gás
+    comprimento_primeiro_trecho = 150 / np.sin(theta_1)  # metros
+    comprimento_segundo_trecho = 150 / np.sin(theta_2)
+    comprimento_terceiro_trecho = 1500
+    comprimento_total = comprimento_terceiro_trecho + comprimento_primeiro_trecho + comprimento_segundo_trecho
+
+    elementos = 1000
+    dl = comprimento_total/elementos
+    pressao = np.zeros(dl)
+    pressao[0] = p
+    d_h = 0.0254 * 7
+    ap = np.pi()* d_h**2 / 4
+    epsilon = 0.0075 * 0.0254
+    L = 0
+    Mg_ar = 0.02896
+    M_g = dg * Mg_ar
+    for i in range(len(pressao)):
+        if L < comprimento_primeiro_trecho:
+            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_1, M_g, pressao[i], temperatura, dl, L)
+        elif L < comprimento_segundo_trecho:
+            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_2, M_g, pressao[i], temperatura, dl, L)
+        else:
+            dp_dl = perda_de_carga(v_lsc, bsw,rgl, ap,d_h, epsilon, theta_3, M_g, pressao[i], temperatura, dl, L)
+
+        pressao[i+1] = pressao[i] + dp_dl*L
+    
+

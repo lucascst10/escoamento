@@ -12,7 +12,9 @@ H_final = 1100  # [m]
 H_bomba = 750  # [m]
 H_manif = 850  # [m]
 theta = 37
-d_max = 2.5 * 0.0254  # [pol] pra m O GANHO DE PRESSÃO DA BOMBA NÃO FICOU ITERATIVO POR PROBLEMAS DE CONVERGÊNCIA(Linha 283)
+d_max = (
+    2.5 * 0.0254
+)  # [pol] pra m O GANHO DE PRESSÃO DA BOMBA NÃO FICOU ITERATIVO POR PROBLEMAS DE CONVERGÊNCIA(Linha 283)
 ########################################
 # Caracterização do fluído quando.
 ########################################
@@ -33,7 +35,7 @@ cp_g_eta = 1750  # J/kg°C
 e = 0.152 / 1000  # Ferro galvanizado exemplo
 ########################################
 # Dados standard obtidos apartir das Vazões volumétricas
-V_L_sc = (4500 / (60 * 60 * 24))  # m3/s
+V_L_sc = 4500 / (60 * 60 * 24)  # m3/s
 V_o_sc = V_L_sc * (1 - BSW)
 V_w_sc = V_L_sc * BSW
 V_g_sc = RGL * V_L_sc
@@ -64,7 +66,8 @@ def V_g(P, T_F, V_g_sc, V_o_sc, V_w_sc):
 #########################################
 # Hold Up no slip
 
-def sigmal(Vl, VG): # Holdup no slip
+
+def sigmal(Vl, VG):  # Holdup no slip
     HL = Vl / (VG + Vl)
     return HL
 
@@ -73,7 +76,7 @@ def sigmal(Vl, VG): # Holdup no slip
 #########################################
 # Teste perfil de temperatura
 do_15_15 = do_API(API)
-T_teste = np.arange(80, 17, -0.1)  
+T_teste = np.arange(80, 17, -0.1)
 
 
 def do_T(do_15_15, T_teste):
@@ -108,8 +111,10 @@ HL = 1
 # Cálculo das capacidades térmicas
 def cp_o(do_15_15, T_teste):
     do = do_T(do_15_15, T_teste)
-    cp_o = (2 * 10 ** (-3) * T_teste - 1.429) * do + (2.67 * 10 ** (-3)) * T_teste + 3.049  # kJ/kg°C
-    return cp_o * 1000 # J/kg°C
+    cp_o = (
+        (2 * 10 ** (-3) * T_teste - 1.429) * do + (2.67 * 10 ** (-3)) * T_teste + 3.049
+    )  # kJ/kg°C
+    return cp_o * 1000  # J/kg°C
 
 
 # Capacidade térmica da mistura
@@ -126,7 +131,7 @@ def cp_m(cp_w, cp_g, cp_o_values, HL, BSW, do_15_15, T_teste):
 
 
 def vazaoMass(Vl, Vg, rho_w, rho_o, rho_g):
-    rhow = rho_w * 16.0185 # lb/ft³ pra kg/m³
+    rhow = rho_w * 16.0185  # lb/ft³ pra kg/m³
     rhoo = rho_o * 16.0185
     rhog = rho_g * 16.0185
     rhol = rhow + rhoo
@@ -189,7 +194,7 @@ Trechos = [L1, L2, L3]
 
 
 a = (T_inf_mar - T_inf_poço) / L3
-b = (T_plat - T_inf_mar)/L2
+b = (T_plat - T_inf_mar) / L2
 step = 1
 
 while i != round(Trechos[0] + 1):
@@ -231,7 +236,7 @@ while i != round(Trechos[0] + 1):
     # Calcular as vazões
     Vl = V_o_sc * Bo1 + V_w_sc * Bw1
     Vg = (V_g_sc - V_o_sc * Rs1 - V_w_sc * Rsw1) * Bg1
-    if Vg<0:
+    if Vg < 0:
         Vg = 0
     Hl = sigmal(Vl, Vg)
     HL_list.append(Hl)
@@ -239,12 +244,12 @@ while i != round(Trechos[0] + 1):
 
     Cpo = [cp_o(do_15_15, T_atual_F[0])]
     Cpm = cp_m(cp_w, cp_g, Cpo, HL, BSW, do_15_15, T_atual_F[0])  # q aconteceu aq
-    m_m = (vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1))
+    m_m = vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1)
     rhol = rho_o1 + rhow
     ml = Vl * (rho_o1 + rhow)
     mg = Vg * rho_g1
     rho_m = Hl * rhol + (1 - Hl) * rho_g1
-    Ap = math.pi * (d_max / 2)**2
+    Ap = math.pi * (d_max / 2) ** 2
     vm1 = (ml + mg) / (rho_m * Ap)
     vm.append(vm1)
 
@@ -252,16 +257,32 @@ while i != round(Trechos[0] + 1):
     Tinf1 = T_inf_poço + (a) * i  # Variação da Temperatura externa em função do dL
     Tf_1 = m_m * 9.81 * np.sin(math.radians(theta_1)) / TEC_poço
     Tf_2 = np.exp((((-TEC_poço) / (m_m * Cpm[0])) * dl))  # arrumar essa bomba
-    Tf_3 = ((Tinf1) - (Tf_1) - (T_atual))
+    Tf_3 = (Tinf1) - (Tf_1) - (T_atual)
     Tf = Tinf1 - Tf_1 - (Tf_2 * Tf_3)
     T.append(Tf)
-    if Pb1<P:
+    if Pb1 < P:
         dp_dl_f = calcular_gradiente_atrito_H(e, d_max, Hl, mil, mig, rho_m, vm)
         dp_dl_g = calcular_gradiente_gravidade(rho_m, Theta_1)
         dp_dl_a = 0
         dp_dl = dp_dl_f + dp_dl_g
     else:
-        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(rho_m, vm1, dg, d_max, e, theta_1, ml, mg, Hl, rhol, rho_g1, mil, mig, Tf, Z1)
+        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(
+            rho_m,
+            vm1,
+            dg,
+            d_max,
+            e,
+            theta_1,
+            ml,
+            mg,
+            Hl,
+            rhol,
+            rho_g1,
+            mil,
+            mig,
+            Tf,
+            Z1,
+        )
     delta_p_t.append(dp_dl)
     delta_p_acc1.append(delta_p_acc)
     delta_p_f.append(delta_p_fric)
@@ -274,13 +295,13 @@ while i != round(Trechos[0] + 1):
         print(i)
     i += 1
     i_new = i
-    
+
 
 i = 0
 
 while i != round(Trechos[1] + 1):
     if i == 0:
-        P_atual = P_perca[-1] + 195*14.5 # 195 bar
+        P_atual = P_perca[-1] + 195 * 14.5  # 195 bar
     else:
         P_atual = P_perca[-1]
     T_atual = T[-1]
@@ -320,20 +341,20 @@ while i != round(Trechos[1] + 1):
     # Calcular as vazões
     Vl = V_o_sc * Bo1 + V_w_sc * Bw1
     Vg = (V_g_sc - V_o_sc * Rs1 - V_w_sc * Rsw1) * Bg1
-    if Vg<0:
+    if Vg < 0:
         Vg = 0
     Hl = sigmal(Vl, Vg)
     HL_list.append(Hl)
     mil = mio + miw
 
     Cpo = [cp_o(do_15_15, T_atual_F[0])]
-    Cpm = cp_m(cp_w, cp_g, Cpo, HL, BSW, do_15_15, T_atual_F[0])  # 
-    m_m = (vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1))
+    Cpm = cp_m(cp_w, cp_g, Cpo, HL, BSW, do_15_15, T_atual_F[0])  #
+    m_m = vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1)
     rhol = rho_o1 + rhow
     ml = Vl * (rho_o1 + rhow)
     mg = Vg * rho_g1
     rho_m = Hl * rhol + (1 - Hl) * rho_g1
-    Ap = math.pi * (d_max / 2)**2
+    Ap = math.pi * (d_max / 2) ** 2
     vm1 = (ml + mg) / (rho_m * Ap)
     vm.append(vm1)
 
@@ -341,15 +362,47 @@ while i != round(Trechos[1] + 1):
     Tinf1 = T_inf_poço + (b) * i  # Variação da Temperatura externa em função do dL
     Tf_1 = m_m * 9.81 * np.sin(math.radians(theta_2)) / TEC_mar
     Tf_2 = np.exp((((-TEC_mar) / (m_m * Cpm[0])) * dl))  # arrumar essa bomba
-    Tf_3 = ((Tinf1) - (Tf_1) - (T_atual))
+    Tf_3 = (Tinf1) - (Tf_1) - (T_atual)
     Tf = Tinf1 - Tf_1 - (Tf_2 * Tf_3)
     T.append(Tf)
-    if Pb1<P:
-        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(rho_m, vm1, dg, d_max, e, theta_1, ml, mg, Hl, rhol, rho_g1, mil, mig, Tf, Z1)
+    if Pb1 < P:
+        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(
+            rho_m,
+            vm1,
+            dg,
+            d_max,
+            e,
+            theta_1,
+            ml,
+            mg,
+            Hl,
+            rhol,
+            rho_g1,
+            mil,
+            mig,
+            Tf,
+            Z1,
+        )
     else:
         vm2, Hl2 = calcular_velocidade_mistura(vm1, d_max, theta_2, Hl)
         rho_m = Hl * rhol + (1 - Hl) * rho_g1
-        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(rho_m, vm2, dg, d_max, e, theta_2, ml, mg, Hl2, rhol, rho_g1, mil, mig, Tf, Z1)
+        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(
+            rho_m,
+            vm2,
+            dg,
+            d_max,
+            e,
+            theta_2,
+            ml,
+            mg,
+            Hl2,
+            rhol,
+            rho_g1,
+            mil,
+            mig,
+            Tf,
+            Z1,
+        )
     delta_p_t.append(dp_dl)
     delta_p_acc1.append(delta_p_acc)
     delta_p_f.append(delta_p_fric)
@@ -362,7 +415,7 @@ while i != round(Trechos[1] + 1):
     i_old = i
     i += 1
     i_new = i
-    
+
 i = 0
 
 while i != round(Trechos[2] + 1):
@@ -404,20 +457,20 @@ while i != round(Trechos[2] + 1):
     # Calcular as vazões
     Vl = V_o_sc * Bo1 + V_w_sc * Bw1
     Vg = (V_g_sc - V_o_sc * Rs1 - V_w_sc * Rsw1) * Bg1
-    if Vg<0:
+    if Vg < 0:
         Vg = 0
     Hl = sigmal(Vl, Vg)
     HL_list.append(Hl)
     mil = mio + miw
 
     Cpo = [cp_o(do_15_15, T_atual_F[0])]
-    Cpm = cp_m(cp_w, cp_g, Cpo, HL, BSW, do_15_15, T_atual_F[0])  
-    m_m = (vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1))
+    Cpm = cp_m(cp_w, cp_g, Cpo, HL, BSW, do_15_15, T_atual_F[0])
+    m_m = vazaoMass(Vl, Vg, rhow, rho_o1, rho_g1)
     rhol = rho_o1 + rhow
     ml = Vl * (rho_o1 + rhow)
     mg = Vg * rho_g1
     rho_m = Hl * rhol + (1 - Hl) * rho_g1
-    Ap = math.pi * (d_max / 2)**2
+    Ap = math.pi * (d_max / 2) ** 2
     vm1 = (ml + mg) / (rho_m * Ap)
     vm.append(vm1)
 
@@ -425,15 +478,47 @@ while i != round(Trechos[2] + 1):
     Tinf1 = T_inf_poço + (b) * i  # Variação da Temperatura externa em função do dL
     Tf_1 = m_m * 9.81 * np.sin(math.radians(theta_1)) / TEC_mar
     Tf_2 = np.exp((((-TEC_mar) / (m_m * Cpm[0])) * dl))  # arrumar essa bomba
-    Tf_3 = ((Tinf1) - (Tf_1) - (T_atual))
+    Tf_3 = (Tinf1) - (Tf_1) - (T_atual)
     Tf = Tinf1 - Tf_1 - (Tf_2 * Tf_3)
     T.append(Tf)
-    if Pb1<P:
-        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(rho_m, vm1, dg, d_max, e, theta_1, ml, mg, Hl, rhol, rho_g1, mil, mig, Tf, Z1)
+    if Pb1 < P:
+        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(
+            rho_m,
+            vm1,
+            dg,
+            d_max,
+            e,
+            theta_1,
+            ml,
+            mg,
+            Hl,
+            rhol,
+            rho_g1,
+            mil,
+            mig,
+            Tf,
+            Z1,
+        )
     else:
         vm2, Hl2 = calcular_velocidade_mistura(vm1, d_max, theta_1, Hl)
         rho_m = Hl * rhol + (1 - Hl) * rho_g1
-        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(rho_m, vm2, dg, d_max, e, theta_1, ml, mg, Hl2, rhol, rho_g1, mil, mig, Tf, Z1)
+        dp_dl, delta_p_acc, delta_p_fric, delta_p_grav = Modelo_Homogêneo(
+            rho_m,
+            vm2,
+            dg,
+            d_max,
+            e,
+            theta_1,
+            ml,
+            mg,
+            Hl2,
+            rhol,
+            rho_g1,
+            mil,
+            mig,
+            Tf,
+            Z1,
+        )
     delta_p_t.append(dp_dl)
     delta_p_acc1.append(delta_p_acc)
     delta_p_f.append(delta_p_fric)
@@ -447,90 +532,89 @@ while i != round(Trechos[2] + 1):
     i += 1
     i_new = i
 
-aceleração = sum(delta_p_acc1)/1366
-gavitacional = sum(delta_p_g)/1366
-fricção = sum(delta_p_f)/1366
-total = sum(delta_p_t)/1366
+aceleração = sum(delta_p_acc1) / 1366
+gavitacional = sum(delta_p_g) / 1366
+fricção = sum(delta_p_f) / 1366
+total = sum(delta_p_t) / 1366
 
 
-
-x = np.linspace(0, L3 + L2 + L1 , len(T))
+x = np.linspace(0, L3 + L2 + L1, len(T))
 plt.plot(x, T)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Temperatura [°C]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Temperatura [°C]")
 plt.grid(True)
 plt.show()
 
 y = np.linspace(0, L3 + L2 + L1, len(P_perca))
 plt.plot(y, P_perca)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Pressão [psi]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Pressão [psi]")
 plt.grid(True)
 plt.show()
 
 z = np.linspace(0, L3 + L2 + L1, len(HL_list))
 plt.plot(z, HL_list)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Hl')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Hl")
 plt.grid(True)
 plt.show()
 
 # Plot PVT
 
-a = np.linspace(0, L3 + L2 + L1 , len(vm))
+a = np.linspace(0, L3 + L2 + L1, len(vm))
 plt.plot(a, vm)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Velocidade da mistura [m/s]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Velocidade da mistura [m/s]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
 
-b = np.linspace(0, L3 + L2 + L1 , len(Bo))
+b = np.linspace(0, L3 + L2 + L1, len(Bo))
 plt.plot(b, Bo)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('FVF do óleo [bbl/STB]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("FVF do óleo [bbl/STB]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
 
-c = np.linspace(0, L3 + L2 + L1 , len(Z))
+c = np.linspace(0, L3 + L2 + L1, len(Z))
 plt.plot(c, Z)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Fator de compressibilidade [ad]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Fator de compressibilidade [ad]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
-d = np.linspace(0, L3 + L2 + L1 , len(rho_o))
+d = np.linspace(0, L3 + L2 + L1, len(rho_o))
 plt.plot(d, rho_o)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Densidade do óleo [lb/ft³]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Densidade do óleo [lb/ft³]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
-e = np.linspace(0, L3 + L2 + L1 , len(delta_p_acc1))
+e = np.linspace(0, L3 + L2 + L1, len(delta_p_acc1))
 plt.plot(e, delta_p_acc1)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Perda de carga (aceleração) [Pa/m]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Perda de carga (aceleração) [Pa/m]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
-f = np.linspace(0, L3 + L2 + L1 , len(delta_p_f))
+f = np.linspace(0, L3 + L2 + L1, len(delta_p_f))
 plt.plot(f, delta_p_f)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Perda de carga (fricção) [Pa/m]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Perda de carga (fricção) [Pa/m]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
-g = np.linspace(0, L3 + L2 + L1 , len(delta_p_g))
+g = np.linspace(0, L3 + L2 + L1, len(delta_p_g))
 plt.plot(g, delta_p_g)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Perda de carga (gravitacional) [Pa/m]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Perda de carga (gravitacional) [Pa/m]")
 plt.grid(True)
-plt.show() 
+plt.show()
 
-h = np.linspace(0, L3 + L2 + L1 , len(delta_p_t))
+h = np.linspace(0, L3 + L2 + L1, len(delta_p_t))
 plt.plot(h, delta_p_t)  # Garantindo tamanhos compatíveis
-plt.xlabel('Comprimento [m]')
-plt.ylabel('Perda de carga (Total) [Pa/m]')
+plt.xlabel("Comprimento [m]")
+plt.ylabel("Perda de carga (Total) [Pa/m]")
 plt.grid(True)
-plt.show() 
+plt.show()
