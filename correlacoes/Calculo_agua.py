@@ -1,9 +1,8 @@
-import numpy as np
+mport numpy as np
 
 
 def rho_w(S):
     rho_w = 62.368 + 0.438603 * S + 1.60074 * 10 ** (-3) * S**2  # lb/ft3
-    rho_w = rho_w * 16.0185  # kg/m3
     return rho_w
 
 
