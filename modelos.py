@@ -9,7 +9,7 @@ def driftflux(
         Fr = v_m / np.sqrt(g * d_h)
         if Fr < 3.5:
             C_0 = 1.05 + 0.15 * np.sin(theta)
-            v_d = np.sqrt(g * d_h) * ((0.35 * np.sin(theta)) + 0.54 * np.cos(theta))
+            v_d = np.sqrt(g * d_h) * ((0.35 * np.sin(np.deg2rad(theta))) + 0.54 * np.cos(np.deg2rad(theta)))
         else:
             C_0 = 1.2
             v_d = 0.35 * np.sqrt(g * d_h) * np.sin(theta)
