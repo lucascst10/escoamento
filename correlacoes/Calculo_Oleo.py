@@ -1,5 +1,5 @@
 import numpy as np
-from . import Calculo_Gas as cg
+import Calculo_Gas as cg
 
 
 def oleo_conversoes_precalc(Tf, api):
@@ -97,3 +97,4 @@ def visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb):
     return mu_oS_Pb + (
         0.001 * (Ppsi - Pb) * (0.024 * mu_oS_Pb**1.6 + 0.038 * mu_oS_Pb**0.56)
     )
+
