@@ -330,9 +330,10 @@ if __name__ == "__main__":
     holdups = np.zeros(elementos)
     Bo_array = np.zeros(elementos)
     Bg_array = np.zeros(elementos)
+    Rs_array = np.zeros(elementos)  
     pressao[0] = p
     temperatura[0] = Tc
-    d_h = 0.0254 * 8
+    d_h = 0.0254 * 5
     ap = np.pi * d_h**2 / 4
     epsilon = 0.0075 * 0.0254
     Mg_ar = 0.02896
@@ -347,7 +348,7 @@ if __name__ == "__main__":
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local = perda_de_carga(
+        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
@@ -364,7 +365,8 @@ if __name__ == "__main__":
 
         if pressao[i] < 0:
             break
-
+        
+        Rs_array[i] = Rs_local
         pressao[i + 1] = pressao[i] + dp_dl * dl
         temperatura[i + 1] = t_now
         holdups[i] = holdup
@@ -417,6 +419,15 @@ if __name__ == "__main__":
     plt.xlabel("Comprimento L [m]")
     plt.ylabel("Fatores de formação [m³/sm³]")
     plt.title("Perfil de Bg e Bo ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 5))
+    plt.plot((pressao[:-1] * 0.00014504), Rs_array[:-1] * 5.614583, label="Rs")
+    plt.xlabel("Pressão [psi]")
+    plt.ylabel("Razão de Solubilidade Rs [scf/stb]")
+    plt.title("Perfil de Rs ao longo de Pressão")
     plt.legend()
     plt.grid(True)
     plt.show()
