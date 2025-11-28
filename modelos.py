@@ -4,19 +4,24 @@ import numpy as np
 def driftflux(
     v_sg, v_m, v_sl, rho_g, rho_l, p_atm, P, g, d_h, sigma_l, theta, mu_l, mu_g
 ):
-    def wold_ghajar():
+    def Bendiksen():
         #print(f"v_sg:{v_sg,}, vm:{v_m}, v_sl:{v_sl}, v_sg:{v_sg}, rho_g:{rho_g}, rho_l:{rho_l}")
-        C_0 = (v_sg / v_m) * (1 + ((v_sl / v_sg) ** ((rho_g / rho_l) ** 0.1)))
-        k7 = (
-            (g * d_h * sigma_l * (1 + np.cos(theta)) * (rho_l - rho_g)) / (rho_l**2)
-        ) ** 0.25
-        v_d = (3.583 * (1 + np.sin(theta)) * (p_atm / P)) * k7
+        Fr = v_m / np.sqrt(g * d_h)
+        if Fr < 3.5:
+            C_0 = 1.05 + 0.15*np.sin(theta)
+            v_d = np.sqrt(g * d_h) * ((0.35* np.sin(theta)) + 0.54*np.cos(theta))
+        else: 
+            C_0 = 1.2 
+            v_d = 0.35* np.sqrt(g * d_h) * np.sin(theta)    
+
         return C_0, v_d
 
-    C_0, v_d = wold_ghajar()
+    C_0, v_d = Bendiksen()
 
     v_g = C_0 * v_m + v_d
     h_g = v_sg / (C_0 * v_m + v_d)
+    #print(f"h_g:{h_g}")
+    #print(f"rho_l:{rho_l}, rho_g:{rho_g}, mu_l:{mu_l}, mu_g:{mu_g}")
 
     rho_m = (1 - h_g) * rho_l + h_g * rho_g
     mu_m = (1 - h_g) * mu_l + h_g * mu_g
