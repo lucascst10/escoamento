@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import correlacoes.Calculo_agua as ca
-import correlacoes.Calculo_Oleo as co
-import correlacoes.Calculo_Gas as cg
+import Calculo_agua as ca
+import Calculo_Oleo as co
+import Calculo_Gas as cg
 from modelos import *
 from Temperature import *
 
@@ -26,7 +26,7 @@ def formulacao(
     fator_atrito = 0.0055 * (1 + ((2e4 * epsilon / d_h) + (1e6 / reynolds)) ** (1 / 3))
     dp_dl_atrito = -fator_atrito * rho * v_m**2 / (2 * d_h)
     dp_dl_gravidade = -rho * 9.81 * np.sin(theta_rad)
-    E = -(vazao_massica_m**2) * titulo * R * temperatura / (ap**2 * M_g * P**2)
+    E = -(vazao_massica_m**2) * titulo * R * (temperatura + 273.15) / (ap**2 * M_g * P**2)
 
     dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 + E)
     dp_dl_aceleracao = E * dp_dl_total
@@ -244,9 +244,10 @@ def perda_de_carga(
         if pressao > Pb_SI:
             mu_l = bsw * mu_w + (1 - bsw) * mu_oleoSubS
             rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
+            holdup_escolhido = holdup_l_ns
         else:
             mu_l = bsw * mu_w + (1 - bsw) * mu_oleoS
-            rho_m, mu_m = driftflux(
+            rho_m, mu_m, h_g = driftflux(
                 v_sg,
                 v_m,
                 v_sl,
@@ -261,6 +262,7 @@ def perda_de_carga(
                 mu_l,
                 mu_g,
             )
+            holdup_escolhido = 1 - h_g
 
         vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m_temp = (
             vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l)
@@ -283,13 +285,13 @@ def perda_de_carga(
             pressao,
         )
         
-        return dp_dl_total, do, vazao_massica_m, holdup_l_ns, Bo, Bg_m3
+        return dp_dl_total, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns  
 
-    dp_dl, do, vazao_massica_m, holdup_l_ns, Bo, Bg_m3 = calcular_perda_de_carga()
+    dp_dl, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns = calcular_perda_de_carga()
+    
+    temp = calc_Temp(L, vazao_massica_m, Tc, bsw, holdup_escolhido)
 
-    temp = calc_Temp(L, vazao_massica_m, Tc, bsw, holdup_l_ns)
-
-    return dp_dl, temp, holdup_l_ns, Bo, Bg_m3
+    return dp_dl, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o
 
 if __name__ == "__main__":
     v_lsc = 6000 / 86400
@@ -318,7 +320,7 @@ if __name__ == "__main__":
     M_air_g = 28.966  # g/mol
 
     # PARAMETROS DE ENTRADA
-    api = 23
+    api = 26
     do = 141.5/(api + 131.5)
     dg = 0.72
 
@@ -328,7 +330,7 @@ if __name__ == "__main__":
 
     BSW = 0.2
 
-    RGL = 200  # [sm3/sm3]
+    RGL = 180  # [sm3/sm3]
     RGO = RGL * 5.61458 / (1 - BSW)  # [scf/stb]
 
     comprimento_primeiro_trecho = 150 / np.sin(np.deg2rad(theta_1))  # metros
@@ -353,12 +355,16 @@ if __name__ == "__main__":
     holdups = np.zeros(elementos)
     Bo_array = np.zeros(elementos)
     Bg_array = np.zeros(elementos)
+    Rs_array = np.zeros(elementos)
+    Pb_array = np.zeros(elementos)
+    Co_array = np.zeros(elementos)
+    rho_o_array = np.zeros(elementos) 
     pressao[0] = p
     temperatura[0] = Tc
     d_h = 0.0254 * 8
     ap = np.pi * d_h**2 / 4
     epsilon = 0.0075 * 0.0254
-    Mg_ar = 0.02896
+    Mg_ar = 0.02896 # kg/mol
     M_g = dg * Mg_ar
 
     for i in range(elementos - 1):
@@ -370,7 +376,7 @@ if __name__ == "__main__":
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local = perda_de_carga(
+        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
@@ -394,8 +400,12 @@ if __name__ == "__main__":
         holdups[i] = holdup
         Bo_array[i] = Bo_local
         Bg_array[i] = Bg_local
+        Rs_array[i] = Rs_local
+        Pb_array[i] = Pb_local
+        Co_array[i] = Co_local
+        rho_o_array[i] = rho_o_local  
 
-    print(temperatura)
+    #print(temperatura)
 
     L_vector = np.linspace(0, comprimento_total, elementos)
     plot_pressure_contour(
@@ -427,21 +437,140 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((pressao[:-1]/1e5), Bg_array[:-1], label="Bg")  
-    plt.plot((pressao[:-1]/1e5), Bo_array[:-1], label="Bo") 
-    plt.xlabel("Pressão [bar]") 
-    plt.ylabel("Fatores de formação [m³/sm³]")
-    plt.title("Perfil de Bg e Bo ao longo de L")
+    plt.plot((temperatura[:-1]), Pb_array[:-1]/1e5, label="Bg")  
+    plt.xlabel("Temperatura [°C]") 
+    plt.ylabel("Pressão de Bolha [bar]")
+    plt.title("Perfil Pressão de Bolha em função da Temperatura")
     plt.legend()
     plt.grid(True)
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((L_vector[:-1]), Bg_array[:-1], label="Bg") 
-    plt.plot((L_vector[:-1]), Bo_array[:-1], label="Bo")  
-    plt.xlabel("Comprimento L [m]")  
-    plt.ylabel("Fatores de formação [m³/sm³]")
-    plt.title("Perfil de Bg e Bo ao longo de L")
+    plt.plot((pressao[:-1]/6894.75729), Rs_array[:-1], label="Rs")  
+    plt.xlabel("Pressão [psia]") 
+    plt.ylabel("Razão solubilidade Gás-Óleo[m³/sm³]")
+    plt.title("Perfil de Rs em função da pressão")
     plt.legend()
     plt.grid(True)
     plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/6894.75729), Bg_array[:-1], label="Bg")  
+    plt.xlabel("Pressão [psia]") 
+    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.title("Perfil de Bg em função da pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/1e5), Bo_array[:-1], label="Bo")  
+    plt.xlabel("Pressão [bar]") 
+    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.title("Perfil de Bo em função da pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((L_vector[:-1]), Bg_array[:-1], label="Bg")  
+    plt.xlabel("Comprimento L [m]")  
+    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.title("Perfil de Bg ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((L_vector[:-1]), Bo_array[:-1], label="Bo")  
+    plt.xlabel("Comprimento L [m]")  
+    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.title("Perfil de Bo ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/1e5), Co_array[:-1], label="Co")   
+    plt.xlabel("Pressão de Bolha [bar]")
+    plt.ylabel("Compressibilidade do óleo [1/Pa]")
+    plt.title("Perfil compressibilidade do óleo em função da Pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/1e5), rho_o_array[:-1], label="rho_o")   
+    plt.xlabel("Pressão de Bolha [bar]")
+    plt.ylabel("Massa espeçífica do óleo [1/Pa]")
+    plt.title("Perfil Massa espeçífica do óleo em função da Pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+
+
+# ================================================
+# NOVO GRÁFICO: PERFIL DE PRESSÃO PARA VÁRIOS d_h
+# ================================================
+
+diametros_polegadas = [8, 7, 6, 5,  4]   
+cores = ["r", "g", "b", "m", "k"]
+
+plt.figure(figsize=(10, 5))
+
+for j, d_pol in enumerate(diametros_polegadas):
+
+    
+    d_h_var = 0.0254 * d_pol
+    ap_var = np.pi * d_h_var**2 / 4
+
+   
+    press_sim = np.zeros(elementos)
+    temp_sim = np.zeros(elementos)
+
+    press_sim[0] = p
+    temp_sim[0] = Tc
+
+    
+    for i in range(elementos - 1):
+        posicao = i * dl
+
+        if posicao < compr1:
+            theta = theta_1
+        elif posicao < compr2:
+            theta = theta_2
+        else:
+            theta = theta_3
+
+        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, = perda_de_carga(
+            v_lsc,
+            bsw,
+            RGL,
+            ap_var,
+            d_h_var,
+            epsilon,
+            theta,
+            M_g,
+            press_sim[i],
+            temp_sim[i],
+            dl,
+            posicao
+        )
+
+        
+        if press_sim[i] < 0:
+            break
+
+        press_sim[i+1] = press_sim[i] + dp_dl * dl
+        temp_sim[i+1] = t_now
+
+
+    plt.plot(L_vector, press_sim / 1e5, color=cores[j], label=f"{d_pol} polegadas")
+
+plt.xlabel("Comprimento L [m]")
+plt.ylabel("Pressão [bar]")
+plt.title("Perfil de pressão ao longo do duto para diferentes diâmetros")
+plt.grid(True)
+plt.legend()
+plt.show()
