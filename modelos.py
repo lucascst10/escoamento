@@ -25,7 +25,7 @@ def driftflux(
 
     rho_m = (1 - h_g) * rho_l + h_g * rho_g
     mu_m = (1 - h_g) * mu_l + h_g * mu_g
-    return rho_m, mu_m
+    return rho_m, mu_m, h_g
 
 
 def homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g):
