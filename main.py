@@ -320,7 +320,7 @@ if __name__ == "__main__":
     M_air_g = 28.966  # g/mol
 
     # PARAMETROS DE ENTRADA
-    api = 26
+    api = 23
     do = 141.5/(api + 131.5)
     dg = 0.72
 
