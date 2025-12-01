@@ -183,7 +183,7 @@ def calcula_PVT(P, T):
 def perda_de_carga(
     v_lsc, bsw, rgl, ap, d_h, epsilon, theta, M_g, pressao, temperatura, dl, L
 ):
-    def vazoes(v_lsc, bo, bw, bg, rs, rsw, rho_l):
+    def vazoes(v_lsc, bo, bw, bg, rs, rsw, rho_l, rho_g):
         v_wsc = v_lsc * bsw
         v_osc = v_lsc*(1 - bsw)
         v_gsc = rgl * v_lsc
@@ -194,7 +194,7 @@ def perda_de_carga(
         vazao_massica_l = rho_l * vazao_l
         
         v_m = (vazao_l + vazao_g) / ap  
-        vazao_massica_m = vazao_massica_l # Ajustado para correção de massa
+        vazao_massica_m = vazao_massica_l + vazao_g*rho_g # Ajustado para correção de massa
 
         return vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m
 
@@ -234,7 +234,7 @@ def perda_de_carga(
         rho_l = bsw * rho_w + (1 - bsw) * rho_o
 
         vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m = (
-            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l)
+            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l, rho_g)
         )
         # Correção da vazão mássica total usando densidade correta do gás
         vazao_massica_g = vazao_g * rho_g
@@ -246,6 +246,7 @@ def perda_de_carga(
             mu_l = bsw * mu_w + (1 - bsw) * mu_oleoSubS
             rho_m, mu_m = homogeneo(holdup_l_ns, rho_l, rho_g, mu_l, mu_g)
             holdup_escolhido = holdup_l_ns
+    
         else:
             mu_l = bsw * mu_w + (1 - bsw) * mu_oleoS
             rho_m, mu_m, h_g = driftflux(
@@ -264,9 +265,10 @@ def perda_de_carga(
                 mu_g,
             )
             holdup_escolhido = 1 - h_g
+            
 
         vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m_temp = (
-            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l)
+            vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l, rho_g)
         )
         
         titulo = vazao_massica_g / vazao_massica_m
@@ -286,7 +288,7 @@ def perda_de_carga(
             pressao,
         )
         
-        return dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m 
+        return dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m
 
     dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m = calcular_perda_de_carga()
     
@@ -530,7 +532,7 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((pressao[:-1]/6894.75729), Rs_array[:-1], label="Rs")  
+    plt.plot((pressao[:-1]/1e5), Rs_array[:-1], label="Rs")  
     plt.xlabel("Pressão [psia]") 
     plt.ylabel("Razão solubilidade Gás-Óleo[m³/sm³]")
     plt.title("Perfil de Rs em função da pressão")
@@ -569,7 +571,7 @@ if __name__ == "__main__":
     plt.plot((pressao[:-1]/6894.75729), Bg_array[:-1], label="Bg")  
     plt.xlabel("Pressão [Psia]")  
     plt.ylabel("Fator volume de formação do gás [m³/sm³]")
-    plt.title("Perfil de Bg ao longo de L")
+    plt.title("Perfil de Bg em função da Pressão")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -650,6 +652,5 @@ plt.title("Perfil de pressão ao longo do duto para diferentes diâmetros")
 plt.grid(True)
 plt.legend()
 plt.show()
-
 
 
