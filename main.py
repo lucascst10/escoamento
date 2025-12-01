@@ -285,13 +285,13 @@ def perda_de_carga(
             pressao,
         )
         
-        return dp_dl_total, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns  
+        return dp_dl_total, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m  
 
-    dp_dl, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns = calcular_perda_de_carga()
+    dp_dl, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m = calcular_perda_de_carga()
     
     temp = calc_Temp(L, vazao_massica_m, Tc, bsw, holdup_escolhido)
 
-    return dp_dl, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o
+    return dp_dl, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m
 
 if __name__ == "__main__":
     v_lsc = 6000 / 86400
@@ -359,6 +359,7 @@ if __name__ == "__main__":
     Pb_array = np.zeros(elementos)
     Co_array = np.zeros(elementos)
     rho_o_array = np.zeros(elementos) 
+    mu_m_array = np.zeros(elementos)    
     pressao[0] = p
     temperatura[0] = Tc
     d_h = 0.0254 * 8
@@ -376,7 +377,7 @@ if __name__ == "__main__":
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local = perda_de_carga(
+        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, holdup_l_ns, mu_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
@@ -404,6 +405,7 @@ if __name__ == "__main__":
         Pb_array[i] = Pb_local
         Co_array[i] = Co_local
         rho_o_array[i] = rho_o_local  
+        mu_m_array[i] = mu_local    
 
     #print(temperatura)
 
@@ -425,6 +427,24 @@ if __name__ == "__main__":
     plt.xlabel("Comprimento L [m]")
     plt.ylabel("Temperatura [°C]")
     plt.title("Perfil de temperatura ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/1e5), rho_o_array[:-1], label="rho_o")   
+    plt.xlabel("Pressão de Bolha [bar]")
+    plt.ylabel("Massa espeçífica do óleo [1/Pa]")
+    plt.title("Perfil Massa espeçífica do óleo em função da Pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((L_vector[:-1]), mu_m_array[:-1], label="mu_m")   
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Viscosidade da mistura [Pa.s]")
+    plt.title("Perfil Viscosidade da mistura ao longo do duto")
+    plt.legend()
     plt.grid(True)
     plt.show()
 
@@ -499,7 +519,7 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
     
-    plt.figure(figsize=(10,5))
+'''    plt.figure(figsize=(10,5))
     plt.plot((pressao[:-1]/1e5), rho_o_array[:-1], label="rho_o")   
     plt.xlabel("Pressão de Bolha [bar]")
     plt.ylabel("Massa espeçífica do óleo [1/Pa]")
@@ -507,7 +527,16 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.show()
-    
+
+    plt.figure(figsize=(10,5))
+    plt.plot((L_vector[:-1]), mu_m_array[:-1], label="mu_m")   
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Viscosidade da mistura [Pa.s]")
+    plt.title("Perfil Viscosidade da mistura ao longo do duto")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    '''
 
 
 # ================================================
@@ -543,7 +572,7 @@ for j, d_pol in enumerate(diametros_polegadas):
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, = perda_de_carga(
+        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, holdup_l_ns, mu_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
