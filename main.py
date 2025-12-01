@@ -30,7 +30,7 @@ def formulacao(
 
     dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 + E)
     dp_dl_aceleracao = E * dp_dl_total
-    return dp_dl_total
+    return dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade
 
 def plot_pressure_contour(
     comprimento_total,
@@ -270,7 +270,7 @@ def perda_de_carga(
         
         titulo = vazao_massica_g / vazao_massica_m
 
-        dp_dl_total = formulacao(
+        dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade = formulacao(
             rho_m,
             v_m,
             mu_m,
@@ -285,13 +285,13 @@ def perda_de_carga(
             pressao,
         )
         
-        return dp_dl_total, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m  
+        return dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m 
 
-    dp_dl, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m = calcular_perda_de_carga()
+    dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m = calcular_perda_de_carga()
     
     temp = calc_Temp(L, vazao_massica_m, Tc, bsw, holdup_escolhido)
 
-    return dp_dl, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_o, holdup_l_ns, mu_m
+    return dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m
 
 if __name__ == "__main__":
     v_lsc = 6000 / 86400
@@ -350,6 +350,8 @@ if __name__ == "__main__":
 
     elementos = 1000
     dl = comprimento_total / elementos
+
+
     pressao = np.zeros(elementos)
     temperatura = np.zeros(elementos)
     holdups = np.zeros(elementos)
@@ -358,8 +360,15 @@ if __name__ == "__main__":
     Rs_array = np.zeros(elementos)
     Pb_array = np.zeros(elementos)
     Co_array = np.zeros(elementos)
-    rho_o_array = np.zeros(elementos) 
-    mu_m_array = np.zeros(elementos)    
+    rho_m_array = np.zeros(elementos) 
+    mu_m_array = np.zeros(elementos)
+    dp_dl_array = np.zeros(elementos)
+    dp_dl_ac_array = np.zeros(elementos)
+    dp_dl_at_array = np.zeros(elementos)
+    dp_dl_g_array = np.zeros(elementos)
+    v_m_array = np.zeros(elementos)
+
+
     pressao[0] = p
     temperatura[0] = Tc
     d_h = 0.0254 * 8
@@ -377,7 +386,7 @@ if __name__ == "__main__":
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, holdup_l_ns, mu_local = perda_de_carga(
+        dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_m_local, holdup_l_ns, mu_local, v_m_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
@@ -404,8 +413,13 @@ if __name__ == "__main__":
         Rs_array[i] = Rs_local
         Pb_array[i] = Pb_local
         Co_array[i] = Co_local
-        rho_o_array[i] = rho_o_local  
-        mu_m_array[i] = mu_local    
+        rho_m_array[i] = rho_m_local  
+        mu_m_array[i] = mu_local
+        dp_dl_array[i] = dp_dl  
+        dp_dl_ac_array[i] = dp_dl_aceleracao
+        dp_dl_at_array[i] = dp_dl_atrito
+        dp_dl_g_array[i] = dp_dl_gravidade
+        v_m_array[i] = v_m_local  
 
     #print(temperatura)
 
@@ -415,10 +429,50 @@ if __name__ == "__main__":
         )
 
     plt.figure(figsize=(10,5))
-    plt.plot(L_vector, pressao/1e5)
+    plt.plot(L_vector, pressao/1e3)
     plt.xlabel("Comprimento L [m]")
     plt.ylabel("Pressão [bar]")  
     plt.title("Perfil de pressão ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector[:-1], -dp_dl_array[:-1]/1e3)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Pressão [kPa/m]")  
+    plt.title("Perfil de dP/dL_Total ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector[:-1], -dp_dl_ac_array[:-1]/1e3)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Pressão [kPa/m]")  
+    plt.title("Perfil de dP/dL_Aceleração o ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector[:-1], -dp_dl_at_array[:-1]/1e3)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Pressão [kPa/m]")  
+    plt.title("Perfil de dP/dL_Atrito o ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector[:-1], -dp_dl_g_array[:-1]/1e3)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Pressão [kPa/m]")  
+    plt.title("Perfil de dP/dL_Gravidade o ao longo do duto")
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(L_vector[:-1], v_m_array[:-1]/1e3)
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Velocidade da mistura [m/s]")  
+    plt.title("Perfil velocidade da mistura o ao longo do duto")
     plt.grid(True)
     plt.show()
 
@@ -431,10 +485,10 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((pressao[:-1]/1e5), rho_o_array[:-1], label="rho_o")   
-    plt.xlabel("Pressão de Bolha [bar]")
-    plt.ylabel("Massa espeçífica do óleo [1/Pa]")
-    plt.title("Perfil Massa espeçífica do óleo em função da Pressão")
+    plt.plot((L_vector[:-1]), rho_m_array[:-1], label="rho_m")   
+    plt.xlabel("Comprimento L [m]")
+    plt.ylabel("Massa espeçífica da mistura [kg/m³]")
+    plt.title("Perfil Massa espeçífica da mistura ao longo do duto")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -519,24 +573,7 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
     
-'''    plt.figure(figsize=(10,5))
-    plt.plot((pressao[:-1]/1e5), rho_o_array[:-1], label="rho_o")   
-    plt.xlabel("Pressão de Bolha [bar]")
-    plt.ylabel("Massa espeçífica do óleo [1/Pa]")
-    plt.title("Perfil Massa espeçífica do óleo em função da Pressão")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
 
-    plt.figure(figsize=(10,5))
-    plt.plot((L_vector[:-1]), mu_m_array[:-1], label="mu_m")   
-    plt.xlabel("Comprimento L [m]")
-    plt.ylabel("Viscosidade da mistura [Pa.s]")
-    plt.title("Perfil Viscosidade da mistura ao longo do duto")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    '''
 
 
 # ================================================
@@ -572,7 +609,7 @@ for j, d_pol in enumerate(diametros_polegadas):
         else:
             theta = theta_3
 
-        dp_dl, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_o_local, holdup_l_ns, mu_local = perda_de_carga(
+        dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, t_now, holdup, Bo_local, Bg_local, Rs_local, Pb_local, Co_local, rho_m_local, holdup_l_ns, mu_local, v_m_local = perda_de_carga(
             v_lsc,
             bsw,
             RGL,
