@@ -28,7 +28,7 @@ def formulacao(
     dp_dl_gravidade = -rho * 9.81 * np.sin(theta_rad)
     E = -(vazao_massica_m**2) * titulo * R * (temperatura + 273.15) / (ap**2 * M_g * P**2)
 
-    dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 + E)
+    dp_dl_total = (dp_dl_atrito + dp_dl_gravidade) / (1 - E)
     dp_dl_aceleracao = E * dp_dl_total
     return dp_dl_total, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade
 
@@ -131,13 +131,13 @@ def calcula_PVT(P, T):
     mu_oleoS = co.visco_oleoS_BEAL_STAN(mu_oleoD, Rs) # cP
 
     mu_oleoSubS = co.visco_oleoSubS_BEAL_STAN(mu_oleoD, RGO, Ppsi, Pb) #cP
-    mu_w = ca.mu_w(P, T) #cP
+   
     
     # Resultados Da Água
     rho_w = ca.rho_w(S) # lb/SCF
     Rsw = ca.Rsw(Ppsi, Tf) # sm3/sm3
     Bw = ca.Bww(Ppsi, Tf) # bbl/STB
-    mu_w = ca.mu_w(P, T) #cP
+    mu_w = ca.mu_w(Ppsi, Tf) #cP
 
     #Conversões
     rho_w_SI = rho_w * 16.01846 #kg/m3
@@ -178,6 +178,7 @@ def calcula_PVT(P, T):
     api,
     do
     )
+    
 
 def perda_de_carga(
     v_lsc, bsw, rgl, ap, d_h, epsilon, theta, M_g, pressao, temperatura, dl, L
@@ -371,7 +372,7 @@ if __name__ == "__main__":
 
     pressao[0] = p
     temperatura[0] = Tc
-    d_h = 0.0254 * 8
+    d_h = 0.0254 * 6
     ap = np.pi * d_h**2 / 4
     epsilon = 0.0075 * 0.0254
     Mg_ar = 0.02896 # kg/mol
@@ -429,7 +430,7 @@ if __name__ == "__main__":
         )
 
     plt.figure(figsize=(10,5))
-    plt.plot(L_vector, pressao/1e3)
+    plt.plot(L_vector, pressao/1e5)
     plt.xlabel("Comprimento L [m]")
     plt.ylabel("Pressão [bar]")  
     plt.title("Perfil de pressão ao longo do duto")
@@ -439,7 +440,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(10,5))
     plt.plot(L_vector[:-1], -dp_dl_array[:-1]/1e3)
     plt.xlabel("Comprimento L [m]")
-    plt.ylabel("Pressão [kPa/m]")  
+    plt.ylabel("dP/dL [kPa/m]")  
     plt.title("Perfil de dP/dL_Total ao longo do duto")
     plt.grid(True)
     plt.show()
@@ -447,7 +448,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(10,5))
     plt.plot(L_vector[:-1], -dp_dl_ac_array[:-1]/1e3)
     plt.xlabel("Comprimento L [m]")
-    plt.ylabel("Pressão [kPa/m]")  
+    plt.ylabel("dP/dL [kPa/m]")  
     plt.title("Perfil de dP/dL_Aceleração o ao longo do duto")
     plt.grid(True)
     plt.show()
@@ -455,7 +456,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(10,5))
     plt.plot(L_vector[:-1], -dp_dl_at_array[:-1]/1e3)
     plt.xlabel("Comprimento L [m]")
-    plt.ylabel("Pressão [kPa/m]")  
+    plt.ylabel("dP/dL [kPa/m]")  
     plt.title("Perfil de dP/dL_Atrito o ao longo do duto")
     plt.grid(True)
     plt.show()
@@ -463,7 +464,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(10,5))
     plt.plot(L_vector[:-1], -dp_dl_g_array[:-1]/1e3)
     plt.xlabel("Comprimento L [m]")
-    plt.ylabel("Pressão [kPa/m]")  
+    plt.ylabel("dP/dL [kPa/m]")  
     plt.title("Perfil de dP/dL_Gravidade o ao longo do duto")
     plt.grid(True)
     plt.show()
@@ -503,6 +504,15 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/1e5), mu_m_array[:-1], label="mu_m")   
+    plt.xlabel("Pressão [bar]")
+    plt.ylabel("Viscosidade da mistura [Pa.s]")
+    plt.title("Perfil Viscosidade da mistura em função da Pressão")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
     plt.plot(L_vector[:-1], holdups[:-1]) 
     plt.xlabel("Comprimento L [m]")
     plt.ylabel("Hold-up de líquido [-]")
@@ -511,7 +521,7 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((temperatura[:-1]), Pb_array[:-1]/1e5, label="Bg")  
+    plt.plot((temperatura[:-1]), Pb_array[:-1]/1e5, label="Pb")  
     plt.xlabel("Temperatura [°C]") 
     plt.ylabel("Pressão de Bolha [bar]")
     plt.title("Perfil Pressão de Bolha em função da Temperatura")
@@ -529,28 +539,10 @@ if __name__ == "__main__":
     plt.show()
 
     plt.figure(figsize=(10,5))
-    plt.plot((pressao[:-1]/6894.75729), Bg_array[:-1], label="Bg")  
-    plt.xlabel("Pressão [psia]") 
-    plt.ylabel("Fator volume de formação [m³/sm³]")
-    plt.title("Perfil de Bg em função da pressão")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    plt.figure(figsize=(10,5))
     plt.plot((pressao[:-1]/1e5), Bo_array[:-1], label="Bo")  
     plt.xlabel("Pressão [bar]") 
-    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.ylabel("Fator volume de formação do óleo [m³/sm³]")
     plt.title("Perfil de Bo em função da pressão")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    plt.figure(figsize=(10,5))
-    plt.plot((L_vector[:-1]), Bg_array[:-1], label="Bg")  
-    plt.xlabel("Comprimento L [m]")  
-    plt.ylabel("Fator volume de formação [m³/sm³]")
-    plt.title("Perfil de Bg ao longo de L")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -558,8 +550,26 @@ if __name__ == "__main__":
     plt.figure(figsize=(10,5))
     plt.plot((L_vector[:-1]), Bo_array[:-1], label="Bo")  
     plt.xlabel("Comprimento L [m]")  
-    plt.ylabel("Fator volume de formação [m³/sm³]")
+    plt.ylabel("Fator volume de formação do óleo [m³/sm³]")
     plt.title("Perfil de Bo ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((L_vector[:-1]), Bg_array[:-1], label="Bg")  
+    plt.xlabel("Comprimento L [m]")  
+    plt.ylabel("Fator volume de formação do gás [m³/sm³]")
+    plt.title("Perfil de Bg ao longo de L")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10,5))
+    plt.plot((pressao[:-1]/6894.75729), Bg_array[:-1], label="Bg")  
+    plt.xlabel("Pressão [Psia]")  
+    plt.ylabel("Fator volume de formação do gás [m³/sm³]")
+    plt.title("Perfil de Bg ao longo de L")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -640,3 +650,6 @@ plt.title("Perfil de pressão ao longo do duto para diferentes diâmetros")
 plt.grid(True)
 plt.legend()
 plt.show()
+
+
+
