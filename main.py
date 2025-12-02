@@ -194,7 +194,7 @@ def perda_de_carga(
         vazao_massica_l = rho_l * vazao_l
         
         v_m = (vazao_l + vazao_g) / ap  
-        vazao_massica_m = vazao_massica_l + vazao_g*rho_g # Ajustado para correção de massa
+        vazao_massica_m = vazao_massica_l + vazao_g*rho_g 
 
         return vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m
 
@@ -236,7 +236,7 @@ def perda_de_carga(
         vazao_l, vazao_g, vazao_massica_l, v_m, vazao_massica_m = (
             vazoes(v_lsc, Bo, Bw, Bg_m3, Rs, Rsw, rho_l, rho_g)
         )
-        # Correção da vazão mássica total usando densidade correta do gás
+        
         vazao_massica_g = vazao_g * rho_g
         vazao_massica_m = vazao_massica_l + vazao_massica_g
 
@@ -292,8 +292,7 @@ def perda_de_carga(
 
     dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, do, vazao_massica_m, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m = calcular_perda_de_carga()
     
-    temp = calc_Temp(L, vazao_massica_m, Tc, bsw, holdup_escolhido)
-
+    temp = calc_Temp(L, dl, vazao_massica_m, temperatura, bsw, holdup_escolhido)
     return dp_dl, dp_dl_aceleracao, dp_dl_atrito, dp_dl_gravidade, temp, holdup_escolhido, Bo, Bg_m3, Rs, Pb_SI, Co, rho_m, holdup_l_ns, mu_m, v_m
 
 if __name__ == "__main__":
