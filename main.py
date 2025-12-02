@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Calculo_agua as ca
-import Calculo_Oleo as co
-import Calculo_Gas as cg
+from correlacoes import Calculo_agua as ca
+from correlacoes import Calculo_Oleo as co
+from correlacoes import Calculo_Gas as cg
 from modelos import *
 from Temperature import *
 
